@@ -1,2 +1,4 @@
-# Files to ignore
+# Files to be ignored by git
+*.DS_Store
+.DS_Store
 node_modules/
