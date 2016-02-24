@@ -7,6 +7,7 @@
     socket.on('connect', function() {
         // call the server-side function 'adduser' and send one parameter (value of prompt)
         socket.emit('adduser', prompt("What's your name?"));
+        // socket.emit('adduser', 'Nick');
     });
 
     // listener, whenever the server emits 'updatechat', this updates the chat body
@@ -32,6 +33,8 @@
 
     // on load of page
     $(function() {
+        $('#startGame').hide();
+
         // when the client clicks SEND
         $('#datasend').click(function() {
             var message = $('#data').val();
@@ -41,7 +44,14 @@
         });
 
         $('#createGame').click(function() {
-            socket.emit('createGame');
+            socket.emit('createGame', socket.username);
+            $(this).toggle();
+            $('#startGame').toggle();
+        });
+
+        $('#startGame').click(function() {
+            socket.emit('startGame');
+            $(this).toggle();
         });
 
         // when the client hits ENTER on their keyboard
@@ -54,7 +64,9 @@
     });
 </script>
 <div style="float:left;width:200px;border-right:1px solid black;height:300px;padding:10px;overflow:scroll-y;">
-    <b>ROOMS</b>
+    <b>Game List</b>
+    <input type="button" id="createGame" value="Create Game"></input>
+    <input type="button" id="startGame" value="Start Game"></input>
     <div id="rooms"></div>
 </div>
 <div style="float:left;width:500px;height:250px;overflow:scroll-y;padding:10px;">
@@ -62,5 +74,3 @@
     <input id="data" style="width:200px;" />
     <input type="button" id="datasend" value="send" />
 </div>
-
-<input type="button" id="createGame" value="Create Game"></input>

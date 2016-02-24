@@ -1,20 +1,32 @@
+// NPM Dependencies
 var express = require('express');
 var app = express();
 var http = require('http');
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 
+// Frenemy Lib
+var Game = require('./lib/game');
+
+// Listen on port
 server.listen(8080);
 
-// routing
+// Routing
 app.get('/', function(req, res) {
-    res.sendfile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/index.html');
 });
 
 
+/*
+ * Global Variables
+ */
 var usernames = {};
 var rooms = ['main'];
+var games = [];
 
+/*
+ * Socket Definitions
+ */
 io.sockets.on('connection', function(socket) {
 
     // when the client emits 'adduser', this listens and executes
@@ -25,6 +37,7 @@ io.sockets.on('connection', function(socket) {
 
         // store the room name in the socket session for this client
         socket.room = 'main';
+        socket.game = false;
 
         // add the client's username to the global list
         usernames[username] = username;
@@ -33,10 +46,10 @@ io.sockets.on('connection', function(socket) {
         socket.join('main');
 
         // echo to client they've connected
-        socket.emit('updatechat', 'SERVER', 'you have connected to Main Lobby.');
+        socket.emit('updatechat', 'Server', 'You have connected to Main Lobby.');
 
         // echo to room 1 that a person has connected to their room
-        socket.broadcast.to('main').emit('updatechat', 'SERVER', username + ' has connected to this room');
+        socket.broadcast.to('main').emit('updatechat', 'Server', username + ' has connected to this room');
         socket.emit('updaterooms', rooms, 'main');
     });
 
@@ -56,31 +69,58 @@ io.sockets.on('connection', function(socket) {
         socket.emit('updatechat', 'SERVER', 'you have connected to ' + newroom);
 
         // sent message to OLD room
-        socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has left this room');
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.username + ' has left this room');
 
         // update socket session room title
         socket.room = newroom;
-        socket.broadcast.to(newroom).emit('updatechat', 'SERVER', socket.username + ' has joined this room');
+        socket.broadcast.to(newroom).emit('updatechat', 'Server', socket.username + ' has joined this room');
         socket.emit('updaterooms', rooms, newroom);
     });
 
-
-    socket.on('createGame', function() {
+    // Not currently using function argument
+    socket.on('createGame', function(owner) {
         console.log('EVENT: createGame');
 
-        rooms.push('game');
+        // Create game instance, push to global array
+        var game = Game.createGame({
+            owner: socket.username,
+            requiredPlayers: 5
+        });
+
+        socket.game = game;
+        games.push(game);
+
+        rooms.push(game.init.room);
 
         socket.leave(socket.room);
-        socket.join('game');
-        socket.emit('updatechat', 'SERVER', 'You have initialized a game.');
+        socket.join(game.init.room);
+        socket.emit('updatechat', 'Server', 'You have initialized a game.');
 
         // sent message to OLD room
-        socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has left this room');
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.username + ' has left this room');
 
         // update socket session room title
-        socket.room = 'game';
-        socket.broadcast.to('game').emit('updatechat', 'SERVER', socket.username + ' has joined this room');
-        socket.emit('updaterooms', rooms, 'game');
+        socket.room = game.init.room;
+        socket.broadcast.to(game.init.room).emit('updatechat', 'Server', socket.username + ' has joined this room');
+        socket.emit('updaterooms', rooms, game.init.room);
+    });
+
+    socket.on('startGame', function() {
+      console.log('EVENT: startGame');
+
+      console.log(socket.room);
+
+      var game = socket.game;
+
+      game.startGame();
+
+      socket.to(game.init.room).emit('updatechat', 'Server', socket.username + ' has just started the game!');
+      // socket.broadcast.to(game.init.room)
+      //     .emit('updatechat', 'Server',
+      //       'Rounds: ' + game.init.rounds +
+      //       '\nCreated: ' + game.init.created
+      //     );
+
     });
 
 
@@ -93,7 +133,7 @@ io.sockets.on('connection', function(socket) {
         io.sockets.emit('updateusers', usernames);
 
         // echo globally that this client has left
-        socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+        socket.broadcast.emit('updatechat', 'Server', socket.username + ' has disconnected');
         socket.leave(socket.room);
     });
 });
