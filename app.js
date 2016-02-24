@@ -11,12 +11,8 @@ app.get('/', function(req, res) {
     res.sendfile(__dirname + '/index.html');
 });
 
-app.use(express.static('public'));
 
-// usernames which are currently connected to the chat
 var usernames = {};
-
-// rooms which are currently available in chat
 var rooms = ['main'];
 
 io.sockets.on('connection', function(socket) {

@@ -1,6 +1,6 @@
 {
-     "name": "mukhin_chat",
-     "description": "example chat application with socket.io",
+     "name": "Frenemy",
+     "description": "Proof of Concept",
      "version": "0.0.1",
      "dependencies": {
         "express": "",
