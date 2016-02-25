@@ -114,12 +114,11 @@ io.sockets.on('connection', function(socket) {
 
       game.startGame();
 
-      socket.to(game.init.room).emit('updatechat', 'Server', socket.username + ' has just started the game!');
-      // socket.broadcast.to(game.init.room)
-      //     .emit('updatechat', 'Server',
-      //       'Rounds: ' + game.init.rounds +
-      //       '\nCreated: ' + game.init.created
-      //     );
+      socket.emit('updatechat', 'Server', socket.username + ' has just started the game!');
+      socket.emit('updatechat', 'Server',
+            'Rounds: ' + game.init.rounds +
+            '\nCreated: ' + game.init.created
+          );
 
     });
 
