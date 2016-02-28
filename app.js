@@ -106,19 +106,19 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('startGame', function() {
-      console.log('EVENT: startGame');
+        console.log('EVENT: startGame');
 
-      console.log(socket.room);
+        console.log(socket.room);
 
-      var game = socket.game;
+        var game = socket.game;
 
-      game.startGame();
+        game.startGame();
 
-      socket.emit('updatechat', 'Server', socket.username + ' has just started the game!');
-      socket.emit('updatechat', 'Server',
+        socket.emit('updatechat', 'Server', socket.username + ' has just started the game!');
+        socket.emit('updatechat', 'Server',
             'Rounds: ' + game.init.rounds +
             '\nCreated: ' + game.init.created
-          );
+        );
 
     });
 
