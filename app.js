@@ -40,12 +40,16 @@ io.sockets.on('connection', function(socket) {
         socket.game = false;
         socket.room = 'Lobby';
 
+        // Connect to the actual socket to receive events
+        socket.join(socket.room);
+
         // Add newly connected Player to global Player array
         players.push(socket.player);
 
         // Announce login of new socket & update other socket's view lists
         socket.emit('updatechat', 'Server', 'Welcome ' + socket.player.name + ' , you have connected to Frenemy! Please join a game.');
-        socket.broadcast.emit('addPlayersToPlayerlist', [socket.player]);
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.player.name + ' has logged in.');
+        socket.broadcast.to(socket.room).emit('addPlayersToPlayerlist', [socket.player]);
 
         // Update socket's view lists
         socket.emit('updatePlayerlist', players, socket.player);
@@ -58,7 +62,8 @@ io.sockets.on('connection', function(socket) {
         if (!socket.room) {
             socket.emit('updatechat', 'Server', 'You are not connected to a game. Chat is disabled.');
         } else {
-            socket.emit('updatechat', socket.player.name, data);
+            // socket.emit('updatechat', socket.player.name, data);
+            io.in(socket.room).emit('updatechat', socket.player.name, data);
         }
     });
 
@@ -69,25 +74,34 @@ io.sockets.on('connection', function(socket) {
         var game = Game.findGameById(games, id);
 
         // Remove socket Player object from lobby Playerlist
-        Util.removeObject(players, socket.player);
+        socket.broadcast.to(socket.room).emit('removeFromPlayerlist', [socket.player]);
+        players = Util.removeObject(players, socket.player);
 
-        // Change sockets
-        socket.leave(socket.game);
-        socket.join(game.id);
+        // Leave previous game (if exists)
+        if (socket.game) { socket.game.removePlayer(socket.player); }
 
-        socket.emit('updatechat', 'SERVER', 'you have connected to ' + game.id);
+        // Leave previous room, disconnect from socket
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.player.name + ' has left the room.');
+        socket.leave(socket.room);
 
-        // Change socket's Game and Room
+        // Update socket's pointers
         socket.game = game;
         socket.room = game.id;
 
+        // Connect to the actual socket, announce arrival
+        socket.join(socket.room);
+        socket.emit('updatechat', 'SERVER', 'you have connected to ' + socket.game.name);
+
         // Add socket's Player object to Game Object
         socket.game.addPlayer(socket.player);
+        socket.broadcast.to(socket.room).emit('addPlayersToPlayerlist', [socket.player]);
 
         // Announce new Player joined & update other Player's Playerlist
-        socket.broadcast.to(socket.game.id).emit('updatechat', 'Server', socket.player.name + ' has joined this room');
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.player.name + ' has joined this room');
         socket.emit('updateGamelist', rooms, socket.game.id);
         socket.emit('updatePlayerlist', socket.game.players, socket.player);
+
+        console.log(socket.game.players);
     });
 
 
@@ -96,26 +110,40 @@ io.sockets.on('connection', function(socket) {
         console.log('EVENT: createGame');
 
         // Create game instance, push to global array
-        var newGame = Game.createGame(Util.guid(), [socket.player], { name: 'Game One', timeout: 5000 }, socket);
+        var newGame = Game.createGame(Util.guid(), [], { name: 'Game One', timeout: 5000 }, socket);
+        var newRoom = newGame.id;
 
         // Push newly created game onto global arrays
-        rooms.push(newGame.id);
+        rooms.push(newRoom);
         games.push(newGame);
 
-        // Leave old room, join new one
-        socket.leave(socket.game.id);
-        socket.join(newGame.id);
+        // Remove socket Player object from lobby Playerlist
+        io.sockets.emit('removeFromPlayerlist', [socket.player]);
+        players = Util.removeObject(players, socket.player);
 
-        // Assign socket's game and room variables
+        // Leave previous game (if exists)
+        if (socket.game) { socket.game.removePlayer(socket.player); }
+
+        // Leave previous room, disconnect from socket
+        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.player.name + ' has left the room.');
+        socket.broadcast.to(socket.room).emit('addGamesToGamelist', [newRoom]);
+        socket.leave(socket.room);
+
+        // Update socket's pointers
         socket.game = newGame;
-        socket.room = newGame.id;
+        socket.room = newRoom;
 
+        // Connect to the actual socket, announce arrival
+        socket.join(newRoom);
+        socket.emit('updatechat', 'SERVER', 'you have connected to ' + socket.game.name);
 
-        io.in(socket.room).emit('updatechat', 'Server', socket.player.name + ' has initialized a game with Name/ID: ' + newGame.id);
-        socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.player.id + ' has joined this game.');
+        // Add Player to Game object Playerlist
+        socket.game.addPlayer(socket.player);
 
         socket.emit('updateGamelist', rooms, socket.room);
         socket.emit('updatePlayerlist', socket.game.players, socket.player);
+
+        console.log(socket.game.players);
     });
 
 
@@ -124,7 +152,7 @@ io.sockets.on('connection', function(socket) {
         console.log(socket.room);
 
         socket.game.startGame();
-        io.in(socket.room).emit('updatechat', 'Server', socket.player.name + ' has just started the game!');
+        io.in(socket.room).emit('updatechat', 'Server', 'The game has just started!');
     });
 
 
