@@ -6,7 +6,7 @@ var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 
 // Frenemy Lib
-var Game = require('./models/game');
+var Game = require('./lib/game');
 
 // Listen on port
 server.listen(8080);
@@ -77,33 +77,31 @@ io.sockets.on('connection', function(socket) {
         socket.emit('updaterooms', rooms, newroom);
     });
 
+
     // Not currently using function argument
     socket.on('createGame', function(owner) {
         console.log('EVENT: createGame');
 
         // Create game instance, push to global array
-        var game = Game.createGame({
-            owner: socket.username,
-            requiredPlayers: 5
-        });
+        socket.game = Game.createGame('GAME_ID', [], { timeout: 5000 }, socket);
+        var game = socket.game;
 
-        socket.game = game;
         games.push(game);
-
-        rooms.push(game.init.room);
+        rooms.push(game.id);
 
         socket.leave(socket.room);
-        socket.join(game.init.room);
+        socket.join(game.id);
         socket.emit('updatechat', 'Server', 'You have initialized a game.');
 
         // sent message to OLD room
         socket.broadcast.to(socket.room).emit('updatechat', 'Server', socket.username + ' has left this room');
 
         // update socket session room title
-        socket.room = game.init.room;
-        socket.broadcast.to(game.init.room).emit('updatechat', 'Server', socket.username + ' has joined this room');
-        socket.emit('updaterooms', rooms, game.init.room);
+        socket.room = game.id;
+        socket.broadcast.to(game.id).emit('updatechat', 'Server', socket.username + ' has joined this room');
+        socket.emit('updaterooms', rooms, game.id);
     });
+
 
     socket.on('startGame', function() {
         console.log('EVENT: startGame');
@@ -115,10 +113,6 @@ io.sockets.on('connection', function(socket) {
         game.startGame();
 
         socket.emit('updatechat', 'Server', socket.username + ' has just started the game!');
-        socket.emit('updatechat', 'Server',
-            'Rounds: ' + game.init.rounds +
-            '\nCreated: ' + game.init.created
-        );
 
     });
 
