@@ -1,3 +1,0 @@
-/*
-    Totally winging it
-*/
