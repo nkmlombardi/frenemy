@@ -1,5 +1,6 @@
 // Libraries
 var _ = require('underscore');
+var round = require('./round');
 
 exports.createGame = function(id, players) {
     return new Game(id, players);
@@ -79,15 +80,19 @@ Game.prototype.removePlayerById = function(id) {
     });
 };
 
-// Game.prototype.setRound = function(round) {
-//     if (round % 1 === 0) {
-//         this.round = round;
-//     } else
-//         return false;
-//     }
-//     return this.round;
-// };
 
-// Game.prototype.incrementRound = function() {
-//     return ++this.current.round;
-// };
+Game.prototype.startGame = function() {
+
+    // Every 2 minutes, cycle through a new round
+    setInterval(function() {
+        // Create a Round object which creates a Ballot object
+        this.current.rounds.push(round.createRound('ID', this.current.players));
+
+        // Ballot listens for votes
+        // Game closes Round which closes Ballot
+        // Ballot returns votes to Round
+        // Round determines losers and returns to Game
+        // Game removes Players
+        // 
+    }, 60 * 1000 * 2)
+}

@@ -6,7 +6,7 @@ var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 
 // Frenemy Lib
-var Game = require('./lib/game');
+var Game = require('./models/game');
 
 // Listen on port
 server.listen(8080);
