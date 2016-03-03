@@ -67,12 +67,39 @@ angular.module('app', [])
         $scope.$apply();
     });
 
+    socket.on('removeFromPlayerlist', function(players) {
+        console.log('Event: removeFromPlayerlist', players);
+
+        $.each(players, function(key, player) {
+            var index = $scope.players.indexOf(player);
+            $scope.players.splice(index, 1);
+        });
+    });
+
 
     // Browser Actions
     $scope.sendChat = function() {
-        console.log('Event: sendChat', $scope.message);
+        console.log('Command: sendChat', $scope.message);
 
         socket.emit('sendchat', $scope.message);
         $scope.message = '';
+    };
+
+    $scope.createGame = function() {
+        console.log('Command: createGame', socket.username);
+
+        socket.emit('createGame', socket.username);
+    };
+
+    $scope.startGame = function() {
+        console.log('Command: startGame');
+
+        socket.emit('startGame');
+    };
+
+    $scope.joinGame = function(game) {
+        console.log('Command: joinGame');
+
+        socket.emit('joinGame', game);
     };
 });
