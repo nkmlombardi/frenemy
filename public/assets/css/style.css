@@ -41,6 +41,10 @@ html {
     list-style: none;
 }
 
+.panel-info .section ul li.self {
+    font-weight: bold;
+}
+
 .panel-info .section ul li {
     padding: 8px 12px;
     background: #EEE;

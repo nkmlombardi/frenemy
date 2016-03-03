@@ -5,25 +5,42 @@ angular.module('app', [])
 
     // Controller Object Lists
     $scope.games = [];
-    $scope.rooms = [];
     $scope.players = [];
     $scope.messages = [];
 
-    $scope.current = {
-        room: {},
+    // Varibles about the Player
+    $scope.self = {
         game: false,
-        player: {}
+        player: false
     };
 
 
     // Socket Listeners
     socket.on('connect', function() {
+        console.log('Event: connect');
+
         $scope.messages = [];
-        socket.emit('adduser', 'USERNAME');
+        socket.emit('playerLogin');
     });
 
-    socket.on('updatechat', function(username, data) {
-        console.log('Event: updatechat', data);
+    // Persisted Socket's status to front end
+    socket.on('playerStatus', function(status) {
+        console.log('Event: playerStatus', status);
+
+        // Assign properties
+        if (_.has(status, 'player')) {
+            $scope.self.player = status.player;
+        }
+
+        if (_.has(status, 'game')) {
+            $scope.self.game = status.game;
+        }
+
+        console.log('Self Object: ', $scope.self);
+    });
+
+    socket.on('updateChat', function(username, data) {
+        console.log('Event: updateChat', data);
 
         $scope.messages.push({
             timestamp: new Date(),
@@ -33,33 +50,31 @@ angular.module('app', [])
         $scope.$apply();
     });
 
-    socket.on('updateGamelist', function(rooms, player_room) {
-        console.log('Event: updateGamelist', rooms);
+    socket.on('updateGamelist', function(games) {
+        console.log('Event: updateGamelist', games);
 
-        $scope.rooms = rooms;
-        $scope.current.room = player_room;
+        $scope.games = games;
         $scope.$apply();
     });
 
-    socket.on('addGamesToGamelist', function(rooms) {
-        console.log('Event: addGamesToGamelist', rooms);
+    socket.on('addGamesToList', function(games) {
+        console.log('Event: addGamesToList', games);
 
-        $.each(rooms, function(key, room) {
-            $scope.rooms.push(room);
+        $.each(games, function(key, game) {
+            $scope.games.push(game);
         });
         $scope.$apply();
     });
 
-    socket.on('updatePlayerlist', function(players, self) {
+    socket.on('updatePlayerList', function(players) {
         console.log('Event: updatePlayerList', players);
 
         $scope.players = players;
-        $scope.current.player = self;
         $scope.$apply();
     });
 
-    socket.on('addPlayersToPlayerlist', function(players) {
-        console.log('Event: addPlayersToPlayerlist', players);
+    socket.on('addPlayersToList', function(players) {
+        console.log('Event: addPlayersToList', players);
 
         $.each(players, function(key, player) {
             $scope.players.push(player);
@@ -67,8 +82,8 @@ angular.module('app', [])
         $scope.$apply();
     });
 
-    socket.on('removeFromPlayerlist', function(players) {
-        console.log('Event: removeFromPlayerlist', players);
+    socket.on('removePlayersFromList', function(players) {
+        console.log('Event: removePlayersFromList', players);
 
         $.each(players, function(key, player) {
             var index = $scope.players.indexOf(player);
@@ -76,19 +91,25 @@ angular.module('app', [])
         });
     });
 
+    socket.on('gameStatus', function(game) {
+        console.log('Event: gameStatus', game);
+
+        $scope.self.game = game;
+    });
+
 
     // Browser Actions
     $scope.sendChat = function() {
         console.log('Command: sendChat', $scope.message);
 
-        socket.emit('sendchat', $scope.message);
+        socket.emit('sendChat', $scope.message);
         $scope.message = '';
     };
 
     $scope.createGame = function() {
-        console.log('Command: createGame', socket.username);
+        console.log('Command: createGame');
 
-        socket.emit('createGame', socket.username);
+        socket.emit('createGame');
     };
 
     $scope.startGame = function() {
@@ -97,9 +118,9 @@ angular.module('app', [])
         socket.emit('startGame');
     };
 
-    $scope.joinGame = function(game) {
+    $scope.joinGame = function(id) {
         console.log('Command: joinGame');
 
-        socket.emit('joinGame', game);
+        socket.emit('joinGame', id);
     };
 });
