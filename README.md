@@ -5,7 +5,7 @@ Intuitive, easy to pick up and play mobile game that allows players to test thei
 Clone the repository to your local machine. Make sure you have nodeJS and npm (package manager) installed on your machine. Run `npm install` while in the home directory of the project. This will install the project's dependencies. I also suggest install `nodemon` globally on your machine, which will automatically detect changes to the server file and restart the node process. Once the process is running access the page at `http://localhost:8080`.
 
 ## Screenshot
-![screenshot](https://i.gyazo.com/103cf9b2b06d717c10b8385528c958f1.png)
+![screenshot](https://i.gyazo.com/ab2fa32deb872fd6a9ea664e8ef66cf2.png)
 
 ## Understanding Sockets
 I found this information to be particularly helpful:
