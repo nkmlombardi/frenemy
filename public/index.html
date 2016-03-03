@@ -33,7 +33,9 @@
 
         <div class="panel-chat">
             <ul class="messages" id="conversation">
-                <!-- <li ng-repeat="message in messages" style="background: {{ message.player }}"> -->
+                <!-- If we wanted backgrounds matching player names:
+                    <li ng-repeat="message in messages" style="background: {{ message.player }}">
+                -->
                 <li ng-repeat="message in messages">
                     <div class="player">{{ message.player }}</div>
                     <div class="message">{{ message.content }}</div>
@@ -52,7 +54,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 
     <!-- Application Logic -->
-    <!-- <script src="assets/js/script.js"></script> -->
     <script src="assets/js/controller.js"></script>
 </body>
 </html>
