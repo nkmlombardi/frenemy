@@ -1,9 +1,4 @@
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
-<script type="text/javascript">
 var socket = io.connect('http://localhost:8080');
-
-
 
 // on connection to server, ask for user's name with an anonymous callback
 socket.on('connect', function() {
@@ -89,7 +84,7 @@ function joinGame(room) {
 }
 
 // on load of page
-$(function() {
+$(document).ready(function() {
     $('#startGame').hide();
 
     // when the client clicks SEND
@@ -119,19 +114,3 @@ $(function() {
         }
     });
 });
-</script>
-<div style="float:left;width:200px;border-right:1px solid black;height:300px;padding:10px;overflow:scroll-y;">
-    <b>Game List</b>
-    <input type="button" id="createGame" value="Create Game"></input>
-    <input type="button" id="startGame" value="Start Game"></input>
-    <div id="rooms"></div>
-    <br />
-    <br />
-    <b style="margin-top: 20px;">Player List</b>
-    <div id="players"></div>
-</div>
-<div style="float:left;width:500px;height:250px;overflow:scroll-y;padding:10px;">
-    <div id="conversation"></div>
-    <input id="data" style="width:200px;" />
-    <input type="button" id="datasend" value="send" />
-</div>

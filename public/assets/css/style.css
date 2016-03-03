@@ -1,0 +1,60 @@
+html {
+    box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+.panel-info {
+    float: left;
+    width: 250px;
+    height: 300px;
+    padding: 10px;
+    border-right: 1px solid black;
+    overflow-y: scroll;
+}
+
+.panel-info .section {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.panel-info .section h2 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+}
+
+.panel-info .section ul {
+    margin: 0;
+}
+
+.panel-info .section ul li {
+
+}
+
+.panel-chat {
+    float: left;
+    width: 700px;
+    padding: 10px;
+}
+
+.panel-chat .messages {
+    height: 250px;
+    margin-bottom: 15px;
+    overflow-y: scroll;
+}
+
+input.chat {
+    width: 570px;
+    margin-right: 10px;
+    float: left;
+}
+
+input.send {
+    width: 100px;
+    float: left;
+}

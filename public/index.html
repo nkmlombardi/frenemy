@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+    <title>Frenemy Proof of Concept</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.3/normalize.css">
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css">
+</head>
+<body>
+    <div ng-controller="MainController">
+        <div class="panel-info">
+            <div class="section">
+                <h2>Actions</h2>
+                <input type="button" id="createGame" value="Create Game"></input>
+                <input type="button" id="startGame" value="Start Game"></input>
+            </div>
+
+            <div class="section">
+                <h2>Game List</h2>
+                <ul id="rooms">
+                    <li ng-repeat="room as rooms">{{ room }}</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>Player List</h2>
+                <ul id="players">
+                    <li ng-repeat="game as game">{{ game.id }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="panel-chat">
+            <div class="messages" id="conversation"></div>
+            <input class="chat" id="data" />
+            <input class="send" type="button" id="datasend" value="send" />
+        </div>
+    </div>
+
+    <!-- Library Imports -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.0-rc.2/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+
+    <!-- Application Logic -->
+    <!-- <script src="assets/js/script.js"></script> -->
+    <script src="assets/js/controller.js"></script>
+</body>
+</html>
