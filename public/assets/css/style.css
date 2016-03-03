@@ -48,6 +48,10 @@ html {
     overflow-y: scroll;
 }
 
+.panel-chat .messages ul {
+    list-style: none;
+}
+
 input.chat {
     width: 570px;
     margin-right: 10px;
