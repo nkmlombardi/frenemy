@@ -21,8 +21,10 @@ var _ = require('underscore');
 
 //// Frenemy Libraries
 var Util = require('./utility');
+var Collection = require('./lib/collection');
 var Game = require('./lib/game');
 var Player = require('./lib/player');
+var Message = require('./lib/message');
 
 // Listen on port
 server.listen(8080);
@@ -43,8 +45,17 @@ app.get('/', function(req, res) {
 var lobby = Game.createLobby(Util.guid(), [], { name: 'Lobby', type: 'lobby' });
 
 //// This is the gamelist, it contains all of the Game objects
-var games = [lobby];
-var messages = [];
+// var games = [lobby];
+// var messages = [];
+
+// Create Game object containers
+var games = Collection.create();
+var players = Collection.create();
+var messages = Collection.create();
+
+games.insert(lobby);
+
+
 
 /*
  * Socket Definitions
@@ -56,7 +67,7 @@ io.sockets.on('connection', function(socket) {
         console.log('Event: playerLogin');
 
         // Create Player object
-        socket.player = Player.createPlayer(Util.guid(), Util.getColor(), socket.id);
+        socket.player = Player.create(socket.id);
 
         // Set socket pointer to lobby Game object
         socket.game = lobby;
@@ -66,6 +77,7 @@ io.sockets.on('connection', function(socket) {
 
         // Add newly connected Player to global Player array
         socket.game.registerPlayer(socket.player);
+        players.insert(socket.player);
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
@@ -82,7 +94,7 @@ io.sockets.on('connection', function(socket) {
 
         // Update socket's Player & Game lists
         socket.emit('updatePlayerList', socket.game.players);
-        socket.emit('updateGamelist', games);
+        socket.emit('updateGamelist', games.listify());
     });
 
 
@@ -96,6 +108,8 @@ io.sockets.on('connection', function(socket) {
             player: socket.player.name,
             content: data
         });
+
+        messageStore.insert(Message.create(socket.player.id, data));
     });
 
     // Triggered by clicking a Game on the Gamelist
@@ -103,7 +117,9 @@ io.sockets.on('connection', function(socket) {
         console.log('Event: joinGame', id);
 
         // Find Game object by it's ID from the Roomlist
-        var selectedGame = Game.findGameById(games, id);
+        // var selectedGame = Game.findGameById(games, id);
+
+        var selectedGame = games.select(id);
         if (selectedGame) {
 
             // Leave previous Game, notify other Players, disconnect from Socket
@@ -135,7 +151,7 @@ io.sockets.on('connection', function(socket) {
             });
 
             // Update Socket's lists
-            socket.emit('updateGamelist', games);
+            socket.emit('updateGamelist', games.listify());
             socket.emit('updatePlayerList', socket.game.players);
         } else {
             console.log('Error: Game to join not found.');
@@ -151,7 +167,8 @@ io.sockets.on('connection', function(socket) {
         var newGame = Game.createGame(Util.guid(), [], { timeout: 5000 }, io);
 
         // Push newly created game onto global Gamelist
-        games.push(newGame);
+        // games.push(newGame);
+        games.insert(newGame);
 
         // Leave previous Game, notify other Players, disconnect from Socket
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
@@ -184,7 +201,7 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.emit('addGamesToList', [socket.game]);
 
         // Update Socket's lists
-        socket.emit('updateGamelist', games);
+        socket.emit('updateGamelist', games.listify());
         socket.emit('updatePlayerList', socket.game.players);
     });
 
