@@ -29,7 +29,7 @@
             <div class="section">
                 <h2>Player List</h2>
                 <ul class="players">
-                    <li ng-repeat="player in players" ng-class="{ 'self' : player.name == self.player.name }">{{ player.name }}</li>
+                    <li ng-repeat="player in players" ng-class="{ 'self' : player.id == self.player.id }">{{ player.name }}</li>
                 </ul>
             </div>
         </div>
