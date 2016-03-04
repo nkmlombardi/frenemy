@@ -3,6 +3,7 @@
   "description": "Proof of Concept",
   "version": "0.0.1",
   "dependencies": {
+    "colors": "^1.1.2",
     "express": "",
     "socket.io": "",
     "underscore": "^1.8.3"
