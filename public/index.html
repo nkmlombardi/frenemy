@@ -8,21 +8,21 @@
 <body>
     <div class="panel" ng-controller="MainController">
         <div class="panel-info">
-            <div class="section" ng-show="self.game.current.state != 'STARTED'">
+            <div class="section" ng-show="client.game.current.state != 'STARTED'">
                 <h2>Actions</h2>
                 <ul>
-                    <li ng-show="self.game.name == 'Lobby'" ng-click="createGame()">Create Game</li>
-                    <li ng-show="self.game.name != 'Lobby'" ng-click="startGame()">Start Game</li>
+                    <li ng-show="client.game.name == 'Lobby'" ng-click="createGame()">Create Game</li>
+                    <li ng-show="client.game.name != 'Lobby'" ng-click="startGame()">Start Game</li>
                 </ul>
             </div>
 
-            <div class="section" ng-show="self.game.current.state != 'STARTED'">
+            <div class="section" ng-show="client.game.current.state != 'STARTED'">
                 <h2>Game List</h2>
                 <ul>
                     <li
                         ng-repeat="game in games"
                         ng-click="joinGame(game.id)"
-                        ng-class="{ 'self' : game.id == self.game.id }">{{ game.name }}</li>
+                        ng-class="{ 'self' : game.id == client.game.id }">{{ game.name }}</li>
                 </ul>
             </div>
 
@@ -31,7 +31,7 @@
                 <ul class="players">
                     <li 
                         ng-repeat="player in players" 
-                        ng-class="{ 'self' : player.id == self.player.id }">{{ player.name }}</li>
+                        ng-class="{ 'self' : player.id == client.player.id }">{{ player.name }}</li>
                 </ul>
             </div>
         </div>

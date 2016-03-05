@@ -20,7 +20,7 @@ angular.module('app', [])
      * should only have access to their own Player and Game object, and only 
      * references (not complete information) of other Players and Games.
      */
-    $scope.self = {
+    $scope.client = {
         game: false,
         player: false
     };
@@ -36,8 +36,6 @@ angular.module('app', [])
 
         $scope.messages = [];
         socket.emit('playerLogin');
-
-        console.log(socket);
     });
 
 
@@ -66,9 +64,9 @@ angular.module('app', [])
     socket.on('gameStatus', function(game) {
         console.log('Event: gameStatus', game);
 
-        $scope.self.game = game;
+        $scope.client.game = game;
 
-        console.log('Self Object: ', $scope.self);
+        console.log('Self Object: ', $scope.client);
     });
 
     socket.on('updateGamelist', function(games) {
@@ -94,9 +92,9 @@ angular.module('app', [])
     socket.on('playerStatus', function(player) {
         console.log('Event: playerStatus', player);
 
-        $scope.self.player = player;
+        $scope.client.player = player;
 
-        console.log('Self Object: ', $scope.self);
+        console.log('Self Object: ', $scope.client);
     });
 
     socket.on('updatePlayerList', function(players) {
@@ -150,7 +148,7 @@ angular.module('app', [])
     $scope.joinGame = function(id) {
         console.log('Command: joinGame');
 
-        if (id != $scope.self.game.id) {
+        if (id != $scope.client.game.id) {
             socket.emit('joinGame', id);
         }
     };

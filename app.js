@@ -17,10 +17,18 @@ var io = require('socket.io').listen(server);
 
 // Utility Libraries
 var _ = require('underscore');
-var Util = require('./utility');
+
+// Custom Collection
+var Collection = require('./lib/collection');
+
+// Global Variables (might be temporary)
+global.utility = require('./utility');
+global.games = Collection.create();
+global.players = Collection.create();
+global.messages = Collection.create();
+global.io = io;
 
 // Frenemy Libraries
-var Collection = require('./lib/collection');
 var Game = require('./lib/game');
 var Player = require('./lib/player');
 var Message = require('./lib/message');
@@ -38,24 +46,19 @@ app.get('/', function(req, res) {
 
 // ------------------------------------------------------
 
-// Create global Object Collections
-var games = Collection.create();
-var players = Collection.create();
-var messages = Collection.create();
-
 /*
  * Create an instance of the Game class with no actual functionality other 
  * than messaging. This will be the default Game joined by new connections. 
  * Push the created Game object to the global Game collection.
  */
 var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
-games.insert(lobby);
+global.games.insert(lobby);
 
 var gameStatus = function(game) {
     console.log('--- GAMESTATUS', game);
     console.log('--- GAMEPLAYERSTATUS',game.players);
 
-    game.players = players.selectMany(game.players).map(function(item) {
+    game.players = global.players.selectMany(game.players).map(function(item) {
         return {
             id: item.id,
             name: item.name
@@ -85,7 +88,7 @@ io.sockets.on('connection', function(socket) {
 
         // Add newly connected Player to storage and Game
         socket.game.registerPlayer(socket.player.id);
-        players.insert(socket.player);
+        global.players.insert(socket.player);
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
@@ -100,14 +103,14 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's Player & Game lists
         socket.emit('updatePlayerList', 
-            players.selectMany(socket.game.players).map(function(item) {
+            global.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', games.map(function(item) {
+        socket.emit('updateGamelist', global.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
@@ -115,15 +118,15 @@ io.sockets.on('connection', function(socket) {
         }));
 
         // Output list of Players
-        console.log('Game Players:\n', players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-        console.log('Player Collection:\n', players.map(function(item) { return item.name }).join(', '));
+        console.log('Game Players:\n', global.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+        console.log('Player Collection:\n', global.players.map(function(item) { return item.name }).join(', '));
     });
 
 
     // Triggered when chat message form submits
     socket.on('sendChat', function(data) {
         io.in(socket.game.id).emit('updateChat', socket.player.name, data);
-        messages.insert(Message.create(socket.player.id, socket.game.id, data));
+        global.messages.insert(Message.create(socket.player.id, socket.game.id, data));
     });
 
 
@@ -132,7 +135,7 @@ io.sockets.on('connection', function(socket) {
 
         // Create Game instance, push to Game Collection
         var newGame = Game.create([], { timeout: 5000 });
-        games.insert(newGame);
+        global.games.insert(newGame);
 
         console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
 
@@ -160,21 +163,21 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's lists
         socket.emit('updatePlayerList', 
-            players.selectMany(socket.game.players).map(function(item) {
+            global.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', games.map(function(item) {
+        socket.emit('updateGamelist', global.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
             };
         }));
 
-        console.log('Game Collection:\n', games.map(function(item) { return item.name }).join(', '));
+        console.log('Game Collection:\n', global.games.map(function(item) { return item.name }).join(', '));
 
     });
 
@@ -184,7 +187,7 @@ io.sockets.on('connection', function(socket) {
         console.log('Event: joinGame:\n', JSON.stringify(id, null, 4));
 
         // Select Game object Socket wishes to join
-        var selectedGame = games.select(id);
+        var selectedGame = global.games.select(id);
 
         // Check to make sure Game object exists
         if (!selectedGame) {
@@ -219,14 +222,14 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's lists
         socket.emit('updatePlayerList', 
-            players.selectMany(socket.game.players).map(function(item) {
+            global.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', games.map(function(item) {
+        socket.emit('updateGamelist', global.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
@@ -240,7 +243,7 @@ io.sockets.on('connection', function(socket) {
 
         // Announce start of Game loop, initiate Game loop
         io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
-        socket.game.startGame(io, games, players, messages);
+        socket.game.startGame();
     });
 
 
@@ -265,10 +268,10 @@ io.sockets.on('connection', function(socket) {
             io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has disconnected');
 
             // Remove Socket's Player from global Game Collection
-            players.delete(socket.player.id);
+            global.players.delete(socket.player.id);
 
-            console.log('Game Players:\n', players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-            console.log('Player Collection:\n', players.map(function(item) { return item.name }).join(', '));
+            console.log('Game Players:\n', global.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+            console.log('Player Collection:\n', global.players.map(function(item) { return item.name }).join(', '));
 
             // Kill Socket's listener on Game's Socket Room
             socket.leave(socket.game.id);
