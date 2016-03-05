@@ -44,6 +44,7 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/public/index.html');
 });
 
+
 // ------------------------------------------------------
 
 /*
@@ -244,6 +245,21 @@ io.sockets.on('connection', function(socket) {
         // Announce start of Game loop, initiate Game loop
         io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
         socket.game.startGame();
+    });
+
+
+    socket.on('sendVote', function(target) {
+        console.log('Event: sendVote:\n', JSON.stringify(socket.game.id, null, 4));
+
+        // Announce start of Game loop, initiate Game loop
+        io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
+        socket.game.startGame();
+
+        if (socket.game.current.status != 'STARTED') {
+            return console.log('Vote receieved for game that has not started');
+        }
+
+        socket.game.current.round.ballot.addVote(this.socket.player.id, target);
     });
 
 

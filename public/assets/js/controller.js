@@ -22,7 +22,8 @@ angular.module('app', [])
      */
     $scope.client = {
         game: false,
-        player: false
+        player: false,
+        vote: false
     };
 
 
@@ -122,6 +123,16 @@ angular.module('app', [])
 
 
     /*
+     * Round Events
+     * These are events that are triggered by change of Game state (the game 
+     * loop), or other Player actions.
+     */
+    socket.on('resetVotes', function() {
+        console.log('Event: resetVotes');
+
+        $scope.client.vote = false;    });
+
+    /*
      * Player Actions
      * These are actions that can be performed by a connected client. Unlike 
      * the previous functions, these are actions, and not listeners for events.
@@ -150,6 +161,14 @@ angular.module('app', [])
 
         if (id != $scope.client.game.id) {
             socket.emit('joinGame', id);
+        }
+    };
+
+    $scope.sendVote = function(targetID) {
+        console.log('Command: joinGame');
+
+        if (targetID != $scope.client.playerID) {
+            socket.emit('sendVote', targetID);
         }
     };
 });

@@ -31,6 +31,7 @@
                 <ul class="players">
                     <li 
                         ng-repeat="player in players" 
+                        ng-click="sendVote(player.id)"
                         ng-class="{ 'self' : player.id == client.player.id }">{{ player.name }}</li>
                 </ul>
             </div>
@@ -41,7 +42,7 @@
                 <!-- If we wanted backgrounds matching player names:
                     <li ng-repeat="message in messages" style="background: {{ message.player }}">
                 -->
-                <li ng-repeat="message in messages">
+                <li style="background: {{ message.player }}" ng-repeat="message in messages">
                     <div class="player">{{ message.player }}</div>
                     <div class="message">{{ message.content }}</div>
                 </li>
