@@ -51,6 +51,19 @@ var messages = Collection.create();
 var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
 games.insert(lobby);
 
+var gameStatus = function(game) {
+    console.log('--- GAMESTATUS', game);
+    console.log('--- GAMEPLAYERSTATUS',game.players);
+
+    game.players = players.selectMany(game.players).map(function(item) {
+        return {
+            id: item.id,
+            name: item.name
+        };
+    });
+
+    return game;
+};
 
 /*
  * Socket Definitions
@@ -114,6 +127,58 @@ io.sockets.on('connection', function(socket) {
     });
 
 
+    // Trigged by clicking create game
+    socket.on('createGame', function() {
+
+        // Create Game instance, push to Game Collection
+        var newGame = Game.create([], { timeout: 5000 });
+        games.insert(newGame);
+
+        console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
+
+        // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
+        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
+        socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
+        socket.game.unregisterPlayer(socket.player.id);
+        socket.leave(socket.game.id);
+
+        //
+        //// Socket Listen Switch ------------------------ Old Game -> New Game
+        //
+
+        // Update Socket's pointers, join Socket Room, register to Game object
+        socket.game = newGame;
+        socket.join(socket.game.id);
+        socket.game.registerPlayer(socket.player.id);
+
+        // Update Socket's Clientside
+        socket.emit('gameStatus', socket.game);
+        socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
+
+        // Persist Game object to other Socket's Clientsides
+         socket.broadcast.emit('addGameToList', _.pick(socket.game, 'id', 'name'));
+
+        // Update Socket's lists
+        socket.emit('updatePlayerList', 
+            players.selectMany(socket.game.players).map(function(item) {
+                return {
+                    id: item.id,
+                    name: item.name
+                };
+            })
+        );
+        socket.emit('updateGamelist', games.map(function(item) {
+            return {
+                id: item.id,
+                name: item.name
+            };
+        }));
+
+        console.log('Game Collection:\n', games.map(function(item) { return item.name }).join(', '));
+
+    });
+
+
     // Triggered by clicking a Game on the Gamelist
     socket.on('joinGame', function(id) {
         console.log('Event: joinGame:\n', JSON.stringify(id, null, 4));
@@ -151,48 +216,6 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has joined this room');
 
         socket.emit('gameStatus', socket.game);
-
-        // Update Socket's lists
-        socket.emit('updatePlayerList', players.selectMany(socket.game.players));
-        socket.emit('updateGamelist', games.map(function(item) {
-            return {
-                id: item.id,
-                name: item.name
-            };
-        }));
-    });
-
-
-    // Trigged by clicking create game
-    socket.on('createGame', function() {
-
-        // Create Game instance, push to Game Collection
-        var newGame = Game.create([], { timeout: 5000 });
-        games.insert(newGame);
-
-        console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
-
-        // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
-        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
-        socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
-        socket.game.unregisterPlayer(socket.player.id);
-        socket.leave(socket.game.id);
-
-        //
-        //// Socket Listen Switch ------------------------ Old Game -> New Game
-        //
-
-        // Update Socket's pointers, join Socket Room, register to Game object
-        socket.game = newGame;
-        socket.join(socket.game.id);
-        socket.game.registerPlayer(socket.player.id);
-
-        // Update Socket's Clientside
-        socket.emit('gameStatus', socket.game);
-        socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
-
-        // Persist Game object to other Socket's Clientsides
-        socket.broadcast.to(socket.game.id).emit('addGameToList', _.pick(socket.game, 'id', 'name'));
 
         // Update Socket's lists
         socket.emit('updatePlayerList', 

@@ -85,22 +85,12 @@ angular.module('app', [])
         $scope.$apply();
     });
 
-    socket.on('addGamesToList', function(games) {
-        console.log('Event: addGamesToList', games);
-
-        $.each(games, function(key, game) {
-            $scope.games.push(game);
-        });
-        $scope.$apply();
-    });
-
 
     /*
      * Player Events
      * These are events that are triggered by actions performed by other 
      * Players in the current game, or by the Game loop.
      */
-
     socket.on('playerStatus', function(player) {
         console.log('Event: playerStatus', player);
 
@@ -123,29 +113,13 @@ angular.module('app', [])
         $scope.$apply();
     });
 
-    socket.on('addPlayersToList', function(players) {
-        console.log('Event: addPlayersToList', players);
-
-        $.each(players, function(key, player) {
-            $scope.players.push(player);
-        });
-        $scope.$apply();
-    });
-
     socket.on('removePlayerFromList', function(player) {
-        console.log('Event: removePlayersFromList', player);
+        console.log('Event: removePlayerFromList', player);
 
-        var index = $scope.players.indexOf(player);
-        $scope.players.splice(index, 1);
-    });
-
-    socket.on('removePlayersFromList', function(players) {
-        console.log('Event: removePlayersFromList', players);
-
-        $.each(players, function(key, player) {
-            var index = $scope.players.indexOf(player);
-            $scope.players.splice(index, 1);
+        $scope.players = $scope.players.filter(function(item) {
+            return item.id != player.id;
         });
+
     });
 
 
