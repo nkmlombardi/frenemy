@@ -143,7 +143,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('createGame', function() {
 
         // Create Game instance, push to Game Collection
-        var newGame = Game.create([], { timeout: 30000 });
+        var newGame = Game.create([], { timeout: 10000 });
         global.games.insert(newGame);
 
         console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));

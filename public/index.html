@@ -34,11 +34,19 @@
                 </ul>
             </div>
 
-            <div class="section" ng-show="client.game.current.losers.length != 0">
-                <h2>Losers</h2>
+            <div class="section" ng-show="client.game.losers.length > 0">
+                <h2 style="color: red">Losers</h2>
                 <ul class="players">
-                    <li ng-repeat="loser in client.game.current.losers"
+                    <li ng-repeat="loser in client.game.losers"
                         ng-class="{ 'self' : loser.id == client.player.id }">{{ loser.name }}</li>
+                </ul>
+            </div>
+
+            <div class="section" ng-show="client.game.winners.length > 0">
+                <h2 style="color: green">Winners!</h2>
+                <ul class="players">
+                    <li ng-repeat="winner in client.game.winners"
+                        ng-class="{ 'self' : winner.id == client.player.id }">{{ winner.name }}</li>
                 </ul>
             </div>
         </div>
