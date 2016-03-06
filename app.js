@@ -55,19 +55,6 @@ app.get('/', function(req, res) {
 var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
 global.games.insert(lobby);
 
-var gameStatus = function(game) {
-    console.log('--- GAMESTATUS', game);
-    console.log('--- GAMEPLAYERSTATUS',game.players);
-
-    game.players = global.players.selectMany(game.players).map(function(item) {
-        return {
-            id: item.id,
-            name: item.name
-        };
-    });
-
-    return game;
-};
 
 /*
  * Socket Definitions
@@ -125,9 +112,30 @@ io.sockets.on('connection', function(socket) {
 
 
     // Triggered when chat message form submits
-    socket.on('sendChat', function(data) {
-        io.in(socket.game.id).emit('updateChat', socket.player.name, data);
-        global.messages.insert(Message.create(socket.player.id, socket.game.id, data));
+    socket.on('sendChat', function(data, target) {
+        if (socket.player.status == false) {
+            return console.log('Player lost and tried to talk.');
+        }
+
+        if (target !== undefined && socket.game.current.state == 'STARTED') {
+            console.log('Event: Private Message')
+
+            var playerObj = global.players.select(target);
+
+            // Update target's chat
+            socket.broadcast.to(playerObj.socketID).emit('updateChat', 'Whisper from ' + socket.player.name + ': ', data);
+            global.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data));
+        
+            // Update sender's chat
+            socket.emit('updateChat', 'Whisper to ' + playerObj.name + ': ', data);
+            global.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper to ' + playerObj.name + ': ', data));
+
+        } else {
+            console.log('Event: Public Message')
+
+            io.in(socket.game.id).emit('updateChat', socket.player.name, data);
+            global.messages.insert(Message.create(socket.player.id, socket.game.id, data));
+        }
     });
 
 
@@ -135,7 +143,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('createGame', function() {
 
         // Create Game instance, push to Game Collection
-        var newGame = Game.create([], { timeout: 5000 });
+        var newGame = Game.create([], { timeout: 30000 });
         global.games.insert(newGame);
 
         console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
@@ -195,6 +203,10 @@ io.sockets.on('connection', function(socket) {
             return console.log('Error: Game to join not found.');
         }
 
+        if (selectedGame.current.state == 'STARTED') {
+            socket.emit('updateChat', 'Server', 'That game has already started and cannot be joined.');
+        }
+
         // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
         socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
@@ -249,17 +261,20 @@ io.sockets.on('connection', function(socket) {
 
 
     socket.on('sendVote', function(target) {
-        console.log('Event: sendVote:\n', JSON.stringify(socket.game.id, null, 4));
+        console.log('Event: sendVote:\n', target);
 
-        // Announce start of Game loop, initiate Game loop
-        io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
-        socket.game.startGame();
+        if (socket.player.status == false) {
+            return console.log('Player lost and tried to vote.');
+        }
 
-        if (socket.game.current.status != 'STARTED') {
+        if (socket.game.current.state != 'STARTED') {
             return console.log('Vote receieved for game that has not started');
         }
 
-        socket.game.current.round.ballot.addVote(this.socket.player.id, target);
+        var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
+        if (result) {
+            socket.emit('voteStatus', target);
+        }
     });
 
 

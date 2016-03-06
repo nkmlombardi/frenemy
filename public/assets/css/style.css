@@ -45,6 +45,10 @@ html {
     font-weight: bold;
 }
 
+.panel-info .section ul li.voted {
+    background: #FD6666;
+}
+
 .panel-info .section ul li {
     padding: 8px 12px;
     background: #EEE;

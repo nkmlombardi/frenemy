@@ -26,6 +26,14 @@ angular.module('app', [])
         vote: false
     };
 
+    /*
+     * Keep the scroll position at the bottom of the page
+     */
+    function updateScroll(){
+        var element = document.getElementById("conversation");
+        element.scrollTop = element.scrollHeight;
+    }
+
 
     /*
      * Connection Events
@@ -54,6 +62,8 @@ angular.module('app', [])
             content: data
         });
         $scope.$apply();
+
+        updateScroll();
     });
 
 
@@ -130,7 +140,17 @@ angular.module('app', [])
     socket.on('resetVotes', function() {
         console.log('Event: resetVotes');
 
-        $scope.client.vote = false;    });
+        $scope.client.vote = false;
+    });
+
+    socket.on('voteStatus', function(target) {
+        console.log('Event: resetVotes');
+
+        if (target == false || target == undefined) {
+            $scope.client.vote = false;
+        }
+    });
+
 
     /*
      * Player Actions
@@ -138,10 +158,26 @@ angular.module('app', [])
      * the previous functions, these are actions, and not listeners for events.
      */
     $scope.sendChat = function() {
-        console.log('Command: sendChat', $scope.message);
+        // Check for private message
+        if ($scope.client.game.current.state == 'STARTED' && $scope.message.charAt(0) == '@') {
+                console.log('Command: sendChat Private Message: ', $scope.message);
 
-        socket.emit('sendChat', $scope.message);
-        $scope.message = '';
+                var playerName = $scope.message.split(' ')[0];
+                playerName = playerName.substr(1);
+                var message = $scope.message.split(' ').slice(1).join(' ');
+
+                // Find specified Player object
+                var playerObj = $scope.players.filter(function ( player ) {
+                    return player.name == playerName;
+                })[0];
+
+                socket.emit('sendChat', message, playerObj.id);
+        } else {
+            console.log('Command: sendChat Public Message: ', $scope.message);
+
+            socket.emit('sendChat', $scope.message);
+            $scope.message = '';
+        }
     };
 
     $scope.createGame = function() {
@@ -165,10 +201,11 @@ angular.module('app', [])
     };
 
     $scope.sendVote = function(targetID) {
-        console.log('Command: joinGame');
+        console.log('Command: sendVote');
 
-        if (targetID != $scope.client.playerID) {
+        if (targetID != $scope.client.player.id && $scope.client.game.current.state == 'STARTED') {
             socket.emit('sendVote', targetID);
+            $scope.client.vote = targetID;
         }
     };
 });

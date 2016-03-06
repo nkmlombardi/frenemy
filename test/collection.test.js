@@ -1,25 +1,50 @@
-//// Utility Libraries
+// Utility Libraries
 var _ = require('underscore');
-
-//// Frenemy Libraries
+var Map = require('collections/map');
 var Util = require('../utility');
-var Collection = require('../lib/collection');
+
+global.utility = Util;
+
+// Frenemy Libraries
 var Game = require('../lib/game');
 var Player = require('../lib/player');
 var Message = require('../lib/message');
 
+// Global Collections
+var games = new Map();
+var players = new Map();
+var messages = new Map();
 
-var games = Collection.create();
-var selectIndexes = [];
+// Games
+var game1 = Game.create([], { timeout: 60000 });
+var game2 = Game.create([], { timeout: 60000 });
+var game3 = Game.create([], { timeout: 60000 });
+var game4 = Game.create([], { timeout: 60000 });
 
-for (var i = 0; i < 5; i++) {
-	var newGameId = games.insert(Game.create([], { name: i }));
-	selectIndexes.push(newGameId);
-}
+games.add(game1);
+games.add(game2);
+games.add(game3);
+games.add(game4);
 
-console.log('--- Games: ', games);
+// Players
+var player1 = Player.create();
+var player2 = Player.create();
+var player3 = Player.create();
+var player4 = Player.create();
 
+players.add(player1);
+players.add(player2);
+players.add(player3);
+players.add(player4);
 
-var gameObjects = games.selectMany(selectIndexes);
+// Game 1 Messages
+var message1 = Message.create(player1.id, game1.id, 'String of characters.');
+var message2 = Message.create(player2.id, game1.id, 'String of characters.');
+var message3 = Message.create(player3.id, game1.id, 'String of characters.');
+var message4 = Message.create(player4.id, game1.id, 'String of characters.');
 
-console.log('--- Game Objects: ', gameObjects);
+messages.add(message1);
+messages.add(message2);
+messages.add(message3);
+messages.add(message4);
+
