@@ -17,6 +17,7 @@ var io = require('socket.io').listen(server);
 
 // Utility Libraries
 var _ = require('underscore');
+var Util = require('./helpers/utility');
 
 // Custom Collection
 var Collection = require('./models/collection');
@@ -51,7 +52,7 @@ app.get('/', function(req, res) {
  * Push the created Game object to the global Game collection.
  */
 var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
-Database.games.insert(lobby);
+Database.games.add(Util.guid(), lobby);
 
 
 /*
@@ -74,7 +75,7 @@ io.sockets.on('connection', function(socket) {
 
         // Add newly connected Player to storage and Game
         socket.game.registerPlayer(socket.player.id);
-        Database.players.insert(socket.player);
+        Database.players.add(Util.guid(), socket.player);
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');

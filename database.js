@@ -1,13 +1,9 @@
-var Collection = require('./models/collection');
+var Map = require("collections/map");
 
-/*
-    This is meant to emulate a database. Each variable below is a table, while
-    this entire file is considered the database.
- */
 module.exports = {
-    games: Collection.create(),
-    players: Collection.create(),
-    messages: Collection.create(),
-    rounds: Collection.create(),
-    ballots: Collection.create()
+    games:      new Map(),
+    players:    new Map(),
+    messages:   new Map(),
+    rounds:     new Map(),
+    ballots:    new Map(),
 };
