@@ -19,19 +19,17 @@ var io = require('socket.io').listen(server);
 var _ = require('underscore');
 
 // Custom Collection
-var Collection = require('./lib/collection');
+var Collection = require('./models/collection');
+var Database = require('./database');
 
 // Global Variables (might be temporary)
-global.utility = require('./utility');
-global.games = Collection.create();
-global.players = Collection.create();
-global.messages = Collection.create();
 global.io = io;
 
+
 // Frenemy Libraries
-var Game = require('./lib/game');
-var Player = require('./lib/player');
-var Message = require('./lib/message');
+var Game = require('./models/game');
+var Player = require('./models/player');
+var Message = require('./models/message');
 
 // Listen on port
 server.listen(8080);
@@ -48,12 +46,12 @@ app.get('/', function(req, res) {
 // ------------------------------------------------------
 
 /*
- * Create an instance of the Game class with no actual functionality other 
- * than messaging. This will be the default Game joined by new connections. 
+ * Create an instance of the Game class with no actual functionality other
+ * than messaging. This will be the default Game joined by new connections.
  * Push the created Game object to the global Game collection.
  */
 var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
-global.games.insert(lobby);
+Database.games.insert(lobby);
 
 
 /*
@@ -76,7 +74,7 @@ io.sockets.on('connection', function(socket) {
 
         // Add newly connected Player to storage and Game
         socket.game.registerPlayer(socket.player.id);
-        global.players.insert(socket.player);
+        Database.players.insert(socket.player);
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
@@ -90,15 +88,15 @@ io.sockets.on('connection', function(socket) {
         socket.emit('playerStatus', socket.player);
 
         // Update Socket's Player & Game lists
-        socket.emit('updatePlayerList', 
-            global.players.selectMany(socket.game.players).map(function(item) {
+        socket.emit('updatePlayerList',
+            Database.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', global.games.map(function(item) {
+        socket.emit('updateGamelist', Database.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
@@ -106,8 +104,8 @@ io.sockets.on('connection', function(socket) {
         }));
 
         // Output list of Players
-        console.log('Game Players:\n', global.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-        console.log('Player Collection:\n', global.players.map(function(item) { return item.name }).join(', '));
+        console.log('Game Players:\n', Database.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+        console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
     });
 
 
@@ -120,21 +118,21 @@ io.sockets.on('connection', function(socket) {
         if (target !== undefined && socket.game.current.state == 'STARTED') {
             console.log('Event: Private Message')
 
-            var playerObj = global.players.select(target);
+            var playerObj = Database.players.select(target);
 
             // Update target's chat
             socket.broadcast.to(playerObj.socketID).emit('updateChat', 'Whisper from ' + socket.player.name + ': ', data);
-            global.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data));
-        
+            Database.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data));
+
             // Update sender's chat
             socket.emit('updateChat', 'Whisper to ' + playerObj.name + ': ', data);
-            global.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper to ' + playerObj.name + ': ', data));
+            Database.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper to ' + playerObj.name + ': ', data));
 
         } else {
             console.log('Event: Public Message')
 
             io.in(socket.game.id).emit('updateChat', socket.player.name, data);
-            global.messages.insert(Message.create(socket.player.id, socket.game.id, data));
+            Database.messages.insert(Message.create(socket.player.id, socket.game.id, data));
         }
     });
 
@@ -144,7 +142,7 @@ io.sockets.on('connection', function(socket) {
 
         // Create Game instance, push to Game Collection
         var newGame = Game.create([], { timeout: 10000 });
-        global.games.insert(newGame);
+        Database.games.insert(newGame);
 
         console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
 
@@ -171,22 +169,22 @@ io.sockets.on('connection', function(socket) {
          socket.broadcast.emit('addGameToList', _.pick(socket.game, 'id', 'name'));
 
         // Update Socket's lists
-        socket.emit('updatePlayerList', 
-            global.players.selectMany(socket.game.players).map(function(item) {
+        socket.emit('updatePlayerList',
+            Database.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', global.games.map(function(item) {
+        socket.emit('updateGamelist', Database.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
             };
         }));
 
-        console.log('Game Collection:\n', global.games.map(function(item) { return item.name }).join(', '));
+        console.log('Game Collection:\n', Database.games.map(function(item) { return item.name }).join(', '));
 
     });
 
@@ -196,7 +194,7 @@ io.sockets.on('connection', function(socket) {
         console.log('Event: joinGame:\n', JSON.stringify(id, null, 4));
 
         // Select Game object Socket wishes to join
-        var selectedGame = global.games.select(id);
+        var selectedGame = Database.games.select(id);
 
         // Check to make sure Game object exists
         if (!selectedGame) {
@@ -234,15 +232,15 @@ io.sockets.on('connection', function(socket) {
         socket.emit('gameStatus', socket.game);
 
         // Update Socket's lists
-        socket.emit('updatePlayerList', 
-            global.players.selectMany(socket.game.players).map(function(item) {
+        socket.emit('updatePlayerList',
+            Database.players.selectMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
                 };
             })
         );
-        socket.emit('updateGamelist', global.games.map(function(item) {
+        socket.emit('updateGamelist', Database.games.map(function(item) {
             return {
                 id: item.id,
                 name: item.name
@@ -283,8 +281,8 @@ io.sockets.on('connection', function(socket) {
         console.log('Event: disconnect');
 
         /*
-         * Give five second grace period before clearing Socket's connections 
-         * to Game Objects to prevent undefined errors if a Client opens and 
+         * Give five second grace period before clearing Socket's connections
+         * to Game Objects to prevent undefined errors if a Client opens and
          * closes a window very quickly.
          */
         setTimeout(function() {
@@ -299,10 +297,10 @@ io.sockets.on('connection', function(socket) {
             io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has disconnected');
 
             // Remove Socket's Player from global Game Collection
-            global.players.delete(socket.player.id);
+            Database.players.delete(socket.player.id);
 
-            console.log('Game Players:\n', global.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-            console.log('Player Collection:\n', global.players.map(function(item) { return item.name }).join(', '));
+            console.log('Game Players:\n', Database.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+            console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
 
             // Kill Socket's listener on Game's Socket Room
             socket.leave(socket.game.id);

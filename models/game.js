@@ -1,7 +1,9 @@
 // Libraries
-var _ = require('underscore');
+var utility = require('../helpers/utility');
+var Database = require('../database');
 var Round = require('./round');
 var Collection = require('./collection');
+var _ = require('underscore');
 
 // Constructors
 exports.create = function(players, options) {
@@ -11,7 +13,7 @@ exports.create = function(players, options) {
 // Class
 function Game(players, options) {
     // Properties set on initialization of object
-    this.id = global.utility.guid();
+    this.id = utility.guid();
     this.name = options.name || this.id;
     this.created = new Date();
     this.timeout = options.timeout;
@@ -85,7 +87,7 @@ Game.prototype.startGame = function() {
     /*
      * On defined interval, end previous round and create new round. The bind
      * function is in place to allow use of this object inside of the function.
-     * The function is getting called once at the beginning so the round begins 
+     * The function is getting called once at the beginning so the round begins
      * immediately.
      */
     var loopFunction = _.bind(function() {
@@ -114,7 +116,7 @@ Game.prototype.startGame = function() {
             console.log(losingNames);
 
 
-            global.io.in(this.id).emit('updatePlayerList', 
+            global.io.in(this.id).emit('updatePlayerList',
                 global.players.selectMany(this.current.players).map(function(item) {
                     return {
                         id: item.id,
@@ -128,11 +130,11 @@ Game.prototype.startGame = function() {
             // Check for winners, if so break the loop
             if (this.current.players.length == 0) {
                 global.io.in(this.id).emit('updateChat', 'Server', 'The following players have have won the game: ' + losingNames.join(', '));
-                
+
                 this.winners = _.union(fullLosingPlayers, this.winners);
 
                 // Send Winners
-                global.io.in(this.id).emit('updatePlayerList', 
+                global.io.in(this.id).emit('updatePlayerList',
                     global.players.selectMany(this.current.players).map(function(item) {
                         return {
                             id: item.id,
@@ -146,11 +148,11 @@ Game.prototype.startGame = function() {
             } else if (this.current.players.length == 1) {
                 var winner = global.players.select(this.current.players[0]);
                 global.io.in(this.id).emit('updateChat', 'Server', 'The following player has won the game: ' + winner.name);
-                
+
                 this.winners.push(winner);
 
                 // Send Winner
-                global.io.in(this.id).emit('updatePlayerList', 
+                global.io.in(this.id).emit('updatePlayerList',
                     global.players.selectMany(this.current.players).map(function(item) {
                         return {
                             id: item.id,
@@ -175,7 +177,7 @@ Game.prototype.startGame = function() {
         this.current.round.startRound();
         global.io.in(this.id).emit('resetVotes');
 
-        global.io.in(this.id).emit('updatePlayerList', 
+        global.io.in(this.id).emit('updatePlayerList',
             global.players.selectMany(this.current.players).map(function(item) {
                 return {
                     id: item.id,

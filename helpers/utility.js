@@ -1,5 +1,3 @@
-var _ = require('underscore');
-
 module.exports = {
 
     /*
@@ -14,10 +12,8 @@ module.exports = {
         return s4() + '-' + s4() + '-' + s4() + '-' + s4();
     },
 
-    getColor: function() {
-
-        // These are all the CSS colors. We will use them for player names!
-        var colors = [
+    // These are all the CSS colors. We will use them for player names!
+    colors:  [
             "AliceBlue", "AntiqueWhite", "Aqua", "Aquamarine",
             "Azure", "Beige", "Bisque", "Black",
             "BlanchedAlmond", "Blue", "BlueViolet", "Brown",
@@ -55,21 +51,13 @@ module.exports = {
             "Tan", "Teal", "Thistle", "Tomato",
             "Turquoise", "Violet", "Wheat", "White",
             "WhiteSmoke", "Yellow", "YellowGreen"
-        ];
-
+    ],
+    getColor: function() {
         // Slice the color out to prevent duplicate names
-        var ri = Math.floor(Math.random() * colors.length);
-        var rs = colors.splice(ri, 1);
+        var ri = Math.floor(Math.random() * this.colors.length);
+        var rs = this.colors.splice(ri, 1);
 
-        // Splice returns an array, apparently
+        // Splice returns an array
         return rs[0];
-    },
-
-    removeObject: function(objectList, object) {
-        return objectList.filter(function(objectListObject) {
-            return !_.isEqual(objectListObject, object);
-        });
     }
-
-
 };
