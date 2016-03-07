@@ -1,3 +1,4 @@
+var utility = require('../helpers/utility');
 var _ = require('underscore');
 
 // Constructors
@@ -8,7 +9,7 @@ exports.create = function() {
 
 // Class Definition
 function Collection() {
-    this.id = global.utility.guid();
+    this.id = utility.guid();
     this.storage = [];
     this.lastModified = new Date();
 };

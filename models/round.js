@@ -1,4 +1,5 @@
 // Libraries
+var utility = require('../helpers/utility');
 var ballot = require('./ballot');
 var _ = require('underscore');
 
@@ -7,7 +8,7 @@ exports.create = function(players) {
 };
 
 function Round(players) {
-    this.id = global.utility.guid();
+    this.id = utility.guid();
     this.startPlayers = players;
     this.endPlayers = players;
     this.ballot = ballot.create();
