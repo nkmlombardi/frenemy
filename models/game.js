@@ -2,66 +2,105 @@
 var utility = require('../helpers/utility');
 var Database = require('../database');
 var Round = require('./round');
-var Collection = require('./collection');
 var _ = require('underscore');
 
+var Set = require("collections/set");
+var SortedArraySet = require("collections/sorted-array-set");
+// Data Structures
+
 // Constructors
-exports.create = function(players, options) {
-    return new Game(players, options);
+exports.create = function(options) {
+    return new Game(options);
 };
 
 // Class
-function Game(players, options) {
+function Game(options) {
     // Properties set on initialization of object
     this.id = utility.guid();
     this.name = options.name || this.id;
     this.created = new Date();
-    this.timeout = options.timeout;
-    this.players = players;
-    this.messages = [];
+    this.timeout = options.timeout || 120000;
+    this.players = new Set();
     this.socket = options.io;
 
     this.losers = [];
     this.winners = [];
 
-    // For defining a Lobby
-    this.type = options.type;
+    // States a Game object can be in
+    this.states = Object.freeze({
+        created: 0,
+        playing: 1,
+        completed: 2
+    });
 
     // Properties determined by the state of the game
     this.current = {
-        state: 'CREATED', // created, round, completed
-        modified: false,
-        players: false,
-        rounds: false,
+        state: this.states.created,
+        players: new Set(),
+        rounds: new Set(),
         round: false
     };
+
+    /*
+        On change of the Game object's PlayerList, emit those changes to the
+        ClientSide so the view layer may be updated.
+     */
+    // this.players.addRangeChangeListener(function(plus, minus, index) {
+    //     console.log("Player Array Changed: added: ", plus, " removed: ", minus, " at ", index);
+    //
+    //     console.log('getMany: ', Database.players.getMany(this.toArray()));
+    //
+    //     // Emit Change
+    //     global.io.emit('updatePlayerList', Database.players.listifyMany(this.toArray()));
+    // });
+
+    this.players.bind(this);
+    this.players.addRangeChangeListener(function(plus, minus, index) {
+        // plus.forEach(function(player) {
+        //     socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
+        // });
+        //
+        // minus.forEach(function(player) {
+        //     socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
+        // })
+        //
+        // socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
+
+        console.log('Listener This: ', this.current);
+
+    });
 };
 
 
 /*
-    Initialization Methods
+    Detects the current state of the game, and adds a specified ID to the
+    PlayerList depending on that state.
  */
-Game.prototype.registerPlayer = function(playerID) {
-    console.log('Game: Player Registered:\n', playerID, this.players);
-
-    return this.players.push(playerID);
+Game.prototype.addPlayer = function(playerID) {
+    if (this.current.state === this.states.created) {
+        return this.players.add(playerID);
+    } else if(this.current.state === this.states.playing) {
+        console.error('Game.addPlayer() was called on a game that has already started.');
+        return false;
+    } else {
+        console.error('Game.addPlayer() was called on a game that has ended.');
+        return false;
+    }
 };
-
-Game.prototype.unregisterPlayer = function(playerID) {
-    this.players = _.without(this.players, playerID);
-
-    console.log('Game: Player Unregistered:\n', playerID, this.players);
-
-    return this.players;
-};
-
 
 /*
-    Stateful Methods
+    Detects the current state of the game, and removes specified ID from either
+    list depending on that state.
  */
 Game.prototype.removePlayer = function(playerID) {
-    this.current.players = _.without(this.current.players, playerID);
-    return this.current.players;
+    if (this.current.state === this.states.created) {
+        return this.players.delete(playerID);
+    } else if(this.current.state === this.states.playing) {
+        return this.current.players.delete(playerID);
+    } else {
+        console.error('Game.removePlayer() was called on a game that has ended.');
+        return false;
+    }
 };
 
 
@@ -69,20 +108,14 @@ Game.prototype.removePlayer = function(playerID) {
     Initiator Methods
  */
 Game.prototype.startGame = function() {
-    if (this.type == 'lobby' || this.timeout == 0) {
-        return console.log('Attempt was made to start a lobby Game instance.');
-    }
+    // Check to see if Game object is actually a Lobby, and not a real Game
+    if (this.timeout === 0) { return console.log('Attempt was made to start a lobby Game instance.'); }
 
     // Initialize game state variables
-    this.current.players = this.players.slice(0);
-    this.current.state = 'STARTED';
-    this.current.modified = new Date();
-    this.current.rounds = [];
-    this.current.round = {};
+    this.current.players = this.players.clone();
+    this.current.state = this.states.playing;
 
-    global.io.in(this.id).emit('gameStatus', this);
-
-    console.log('Current Players Array: ', this.current.players);
+    // Persist Game Status
 
     /*
      * On defined interval, end previous round and create new round. The bind
@@ -93,14 +126,12 @@ Game.prototype.startGame = function() {
     var loopFunction = _.bind(function() {
         // If this isn't the first round, close previous round
         if (this.current.rounds.length != 0) {
-            console.log("- Round ended.");
             global.io.in(this.id).emit('updateChat', 'Server', 'Round has ended.');
+
             var losingPlayers = this.current.round.endRound();
 
             this.current.players = _.difference(this.current.players, losingPlayers);
 
-            console.log('Current Players: ', this.current.players);
-            console.log('Round endPlayers: ', this.current.round.endPlayers);
 
             var fullLosingPlayers = global.players.selectMany(losingPlayers);
             var losingNames = _.pluck(fullLosingPlayers, 'name');
@@ -116,14 +147,7 @@ Game.prototype.startGame = function() {
             console.log(losingNames);
 
 
-            global.io.in(this.id).emit('updatePlayerList',
-                global.players.selectMany(this.current.players).map(function(item) {
-                    return {
-                        id: item.id,
-                        name: item.name
-                    };
-                })
-            );
+            // Persist PlayerList
 
             global.io.in(this.id).emit('gameStatus', this);
 
@@ -133,15 +157,7 @@ Game.prototype.startGame = function() {
 
                 this.winners = _.union(fullLosingPlayers, this.winners);
 
-                // Send Winners
-                global.io.in(this.id).emit('updatePlayerList',
-                    global.players.selectMany(this.current.players).map(function(item) {
-                        return {
-                            id: item.id,
-                            name: item.name
-                        };
-                    })
-                );
+                // Persist PlayerList
 
                 return clearInterval(gameLoop);
 
@@ -151,15 +167,7 @@ Game.prototype.startGame = function() {
 
                 this.winners.push(winner);
 
-                // Send Winner
-                global.io.in(this.id).emit('updatePlayerList',
-                    global.players.selectMany(this.current.players).map(function(item) {
-                        return {
-                            id: item.id,
-                            name: item.name
-                        };
-                    })
-                );
+                // Persist PlayerList
 
                 return clearInterval(gameLoop);
 
@@ -169,22 +177,16 @@ Game.prototype.startGame = function() {
         }
 
         // Create Round object, push onto Game object
-        console.log('+ Round ' + this.current.rounds.length + ' Started!');
+
         this.current.round = Round.create(this.current.players);
         this.current.rounds.push(this.current.round);
 
         // Start Round & Ballot listener
-        this.current.round.startRound();
+        this.current.round.start();
+
         global.io.in(this.id).emit('resetVotes');
 
-        global.io.in(this.id).emit('updatePlayerList',
-            global.players.selectMany(this.current.players).map(function(item) {
-                return {
-                    id: item.id,
-                    name: item.name
-                };
-            })
-        );
+        // Persist PlayerList
 
         var playerNames = _.pluck(global.players.selectMany(this.current.players), 'name');
 
@@ -194,7 +196,7 @@ Game.prototype.startGame = function() {
         // console.log(this.current.round);
         // console.log(this.current.rounds);
 
-        global.io.in(this.id).emit('gameStatus', this);
+        // Persist Game Status
 
     }, this);
 

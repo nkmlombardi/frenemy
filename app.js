@@ -20,7 +20,6 @@ var _ = require('underscore');
 var Util = require('./helpers/utility');
 
 // Custom Collection
-var Collection = require('./models/collection');
 var Database = require('./database');
 
 // Global Variables (might be temporary)
@@ -65,7 +64,9 @@ io.sockets.on('connection', function(socket) {
 
         // Create Player object
         socket.player = Player.create(socket.id);
-        console.log('Event: playerLogin:\n', JSON.stringify(socket.player, null, 4));
+        Database.players.set(socket.player.id, socket.player);
+
+        // console.log('Event: playerLogin:\n', JSON.stringify(socket.player, null, 4));
 
         // Set socket pointer to lobby Game object
         socket.game = lobby;
@@ -73,16 +74,16 @@ io.sockets.on('connection', function(socket) {
         // Connect to the actual socket to receive events
         socket.join(socket.game.id);
 
-        // Add newly connected Player to storage and Game
-        socket.game.registerPlayer(socket.player.id);
-        Database.players.add(Util.guid(), socket.player);
+
+        socket.game.addPlayer(socket.player.id);
+
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
         socket.emit('updateChat', 'Server', 'Welcome ' + socket.player.name + ', you have connected to Frenemy! You are currently in the Lobby.');
 
         // Add Player to other Player's Playerlists
-        socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
+        // socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
 
         // Send socket their Player object
         socket.emit('gameStatus', socket.game);
@@ -90,7 +91,7 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's Player & Game lists
         socket.emit('updatePlayerList',
-            Database.players.selectMany(socket.game.players).map(function(item) {
+            Database.players.getMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
@@ -105,7 +106,7 @@ io.sockets.on('connection', function(socket) {
         }));
 
         // Output list of Players
-        console.log('Game Players:\n', Database.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+        console.log('Game Players:\n', Database.players.getMany(socket.game.players).map(function(item) { return item.name }).join(', '));
         console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
     });
 
@@ -116,7 +117,7 @@ io.sockets.on('connection', function(socket) {
             return console.log('Player lost and tried to talk.');
         }
 
-        if (target !== undefined && socket.game.current.state == 'STARTED') {
+        if (target !== undefined && socket.game.current.state == socket.game.states.playing) {
             console.log('Event: Private Message')
 
             var playerObj = Database.players.select(target);
@@ -149,8 +150,8 @@ io.sockets.on('connection', function(socket) {
 
         // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
-        socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
-        socket.game.unregisterPlayer(socket.player.id);
+        // socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
+        socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
         //
@@ -160,7 +161,7 @@ io.sockets.on('connection', function(socket) {
         // Update Socket's pointers, join Socket Room, register to Game object
         socket.game = newGame;
         socket.join(socket.game.id);
-        socket.game.registerPlayer(socket.player.id);
+        socket.game.addPlayer(socket.player.id);
 
         // Update Socket's Clientside
         socket.emit('gameStatus', socket.game);
@@ -171,7 +172,7 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's lists
         socket.emit('updatePlayerList',
-            Database.players.selectMany(socket.game.players).map(function(item) {
+            Database.players.getMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
@@ -198,18 +199,16 @@ io.sockets.on('connection', function(socket) {
         var selectedGame = Database.games.select(id);
 
         // Check to make sure Game object exists
-        if (!selectedGame) {
-            return console.log('Error: Game to join not found.');
-        }
+        if (!selectedGame) { return console.log('Error: Game to join not found.'); }
 
-        if (selectedGame.current.state == 'STARTED') {
+        if (selectedGame.current.state == selectedGame.states.started) {
             socket.emit('updateChat', 'Server', 'That game has already started and cannot be joined.');
         }
 
         // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
-        socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
-        socket.game.unregisterPlayer(socket.player.id);
+        // socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
+        socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
         //
@@ -234,7 +233,7 @@ io.sockets.on('connection', function(socket) {
 
         // Update Socket's lists
         socket.emit('updatePlayerList',
-            Database.players.selectMany(socket.game.players).map(function(item) {
+            Database.players.getMany(socket.game.players).map(function(item) {
                 return {
                     id: item.id,
                     name: item.name
@@ -266,7 +265,7 @@ io.sockets.on('connection', function(socket) {
             return console.log('Player lost and tried to vote.');
         }
 
-        if (socket.game.current.state != 'STARTED') {
+        if (socket.game.current.state != sockt.game.states.created) {
             return console.log('Vote receieved for game that has not started');
         }
 
@@ -300,7 +299,7 @@ io.sockets.on('connection', function(socket) {
             // Remove Socket's Player from global Game Collection
             Database.players.delete(socket.player.id);
 
-            console.log('Game Players:\n', Database.players.selectMany(socket.game.players).map(function(item) { return item.name }).join(', '));
+            console.log('Game Players:\n', Database.players.getMany(socket.game.players).map(function(item) { return item.name }).join(', '));
             console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
 
             // Kill Socket's listener on Game's Socket Room

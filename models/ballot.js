@@ -26,7 +26,7 @@ Ballot.prototype.randomizeVotes = function(argPlayers) {
     }
 };
 
-Ballot.prototype.closeBallot = function() {
+Ballot.prototype.close = function() {
     this.open = false;
 
     var countVotes = _.countBy(this.votes, function(vote) {
