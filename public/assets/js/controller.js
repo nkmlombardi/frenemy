@@ -61,8 +61,8 @@ angular.module('app', [])
             player: username,
             content: data
         });
+        
         $scope.$apply();
-
         updateScroll();
     });
 
@@ -80,7 +80,7 @@ angular.module('app', [])
         console.log('Self Object: ', $scope.client);
     });
 
-    socket.on('updateGamelist', function(games) {
+    socket.on('updateGameList', function(games) {
         console.log('Event: updateGamelist', games);
 
         $scope.games = games;
@@ -129,6 +129,7 @@ angular.module('app', [])
             return item.id != player.id;
         });
 
+        $scope.$apply();
     });
 
 

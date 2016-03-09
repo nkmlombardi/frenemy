@@ -15,16 +15,9 @@ var http = require('http');
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
 
-// Utility Libraries
-var _ = require('underscore');
-var Util = require('./helpers/utility');
-
-// Custom Collection
+// Global Variables
 var Database = require('./database');
-
-// Global Variables (might be temporary)
 global.io = io;
-
 
 // Frenemy Libraries
 var Game = require('./models/game');
@@ -50,8 +43,7 @@ app.get('/', function(req, res) {
  * than messaging. This will be the default Game joined by new connections.
  * Push the created Game object to the global Game collection.
  */
-var lobby = Game.create([], { name: 'Lobby', type: 'lobby' });
-Database.games.add(Util.guid(), lobby);
+var lobby = Game.create({ name: 'Lobby' });
 
 
 /*
@@ -62,95 +54,68 @@ io.sockets.on('connection', function(socket) {
     // Triggered when a new socket connects
     socket.on('playerLogin', function() {
 
-        // Create Player object
+        // Create, register, and persist Player object
         socket.player = Player.create(socket.id);
-        Database.players.set(socket.player.id, socket.player);
+        socket.emit('playerStatus', socket.player);
 
-        // console.log('Event: playerLogin:\n', JSON.stringify(socket.player, null, 4));
-
-        // Set socket pointer to lobby Game object
+        // Join Lobby, add Player to Lobby
         socket.game = lobby;
-
-        // Connect to the actual socket to receive events
         socket.join(socket.game.id);
-
-
         socket.game.addPlayer(socket.player.id);
-
+        socket.emit('gameStatus', socket.game);
 
         // Announce Player login
         io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
-        socket.emit('updateChat', 'Server', 'Welcome ' + socket.player.name + ', you have connected to Frenemy! You are currently in the Lobby.');
-
-        // Add Player to other Player's Playerlists
-        // socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
-
-        // Send socket their Player object
-        socket.emit('gameStatus', socket.game);
-        socket.emit('playerStatus', socket.player);
+        socket.emit('updateChat', 'Server', 'Welcome ' + socket.player.name + ', you have connected to Frenemy! The game is currently in Alpha stages so you may encounter some unpleasant bugs. Thank you for participating! You are currently in the Lobby.');
 
         // Update Socket's Player & Game lists
-        socket.emit('updatePlayerList',
-            Database.players.getMany(socket.game.players).map(function(item) {
-                return {
-                    id: item.id,
-                    name: item.name
-                };
-            })
-        );
-        socket.emit('updateGamelist', Database.games.map(function(item) {
-            return {
-                id: item.id,
-                name: item.name
-            };
-        }));
-
-        // Output list of Players
-        console.log('Game Players:\n', Database.players.getMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-        console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
+        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
+        socket.emit('updateGameList', Database.games.listifyAll());
     });
 
 
     // Triggered when chat message form submits
     socket.on('sendChat', function(data, target) {
-        if (socket.player.status == false) {
-            return console.log('Player lost and tried to talk.');
+        if (socket.chatFloodControl) { return socket.emit('updateChat', 'Server', 'Pump the brakes there chief...'); }
+
+        if (socket.game.current.state === socket.game.states.playing) {
+            if (socket.game.current.players.has(socket.player.id)) {
+                socket.emit('updateChat', 'Server', 'You were voted out and therefore lost your ability to send messages.');
+                return console.log('Player lost and tried to send a message.');
+            }
         }
 
         if (target !== undefined && socket.game.current.state == socket.game.states.playing) {
-            console.log('Event: Private Message')
-
-            var playerObj = Database.players.select(target);
+            var player = Database.players.get(target);
 
             // Update target's chat
-            socket.broadcast.to(playerObj.socketID).emit('updateChat', 'Whisper from ' + socket.player.name + ': ', data);
-            Database.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data));
+            socket.broadcast.to(player.socketID).emit('updateChat', 'Whisper from ' + socket.player.name + ': ', data);
+            Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data);
 
             // Update sender's chat
-            socket.emit('updateChat', 'Whisper to ' + playerObj.name + ': ', data);
-            Database.messages.insert(Message.create(socket.player.id, socket.game.id, 'Whisper to ' + playerObj.name + ': ', data));
+            Message.create(socket.player.id, socket.game.id, 'Whisper to ' + player.name + ': ', data);
+            socket.emit('updateChat', 'Whisper to ' + player.name + ': ', data);
 
         } else {
-            console.log('Event: Public Message')
-
+            Message.create(socket.player.id, socket.game.id, data);
             io.in(socket.game.id).emit('updateChat', socket.player.name, data);
-            Database.messages.insert(Message.create(socket.player.id, socket.game.id, data));
         }
+
+        socket.chatFloodControl = true;
+        setTimeout(function() {
+            socket.chatFloodControl = false;
+        }, 3000);
     });
 
 
     // Trigged by clicking create game
     socket.on('createGame', function() {
 
-        // Create Game instance, push to Game Collection
-        var newGame = Game.create([], { timeout: 10000 });
-        Database.games.insert(newGame);
-
-        console.log('Event: createGame:\n', JSON.stringify(newGame, null, 4));
+        // Create, register, and persist new Game object
+        var newGame = Game.create({ timeout: 10000 });
 
         // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
-        // socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
         socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
@@ -166,48 +131,29 @@ io.sockets.on('connection', function(socket) {
         // Update Socket's Clientside
         socket.emit('gameStatus', socket.game);
         socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
-
-        // Persist Game object to other Socket's Clientsides
-         socket.broadcast.emit('addGameToList', _.pick(socket.game, 'id', 'name'));
+        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has joined this room');
 
         // Update Socket's lists
-        socket.emit('updatePlayerList',
-            Database.players.getMany(socket.game.players).map(function(item) {
-                return {
-                    id: item.id,
-                    name: item.name
-                };
-            })
-        );
-        socket.emit('updateGamelist', Database.games.map(function(item) {
-            return {
-                id: item.id,
-                name: item.name
-            };
-        }));
-
-        console.log('Game Collection:\n', Database.games.map(function(item) { return item.name }).join(', '));
-
+        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
+        socket.emit('updateGameList', Database.games.listifyAll());
     });
 
 
     // Triggered by clicking a Game on the Gamelist
-    socket.on('joinGame', function(id) {
-        console.log('Event: joinGame:\n', JSON.stringify(id, null, 4));
+    socket.on('joinGame', function(gameID) {
 
         // Select Game object Socket wishes to join
-        var selectedGame = Database.games.select(id);
+        var selectedGame = Database.games.get(gameID);
 
         // Check to make sure Game object exists
         if (!selectedGame) { return console.log('Error: Game to join not found.'); }
 
-        if (selectedGame.current.state == selectedGame.states.started) {
-            socket.emit('updateChat', 'Server', 'That game has already started and cannot be joined.');
+        if (selectedGame.current.state === selectedGame.states.started) {
+            return socket.emit('updateChat', 'Server', 'That game has already started and cannot be joined.');
         }
 
         // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
-        // socket.broadcast.to(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
         socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
@@ -215,82 +161,54 @@ io.sockets.on('connection', function(socket) {
         //// Socket Listen Switch ------------------------ Old Game -> New Game
         //
 
-        // Update Socket's pointers to selectedGame
+        // Update Socket's pointers, join Socket Room, register to Game object
         socket.game = selectedGame;
-
-        // Connect to the actual Socket, announce arrival
         socket.join(socket.game.id);
+        socket.game.addPlayer(socket.player.id);
+
+        // Update Socket's Clientside
+        socket.emit('gameStatus', socket.game);
         socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
-
-        // Add socket's Player object to Game Object
-        socket.game.registerPlayer(socket.player.id);
-        socket.broadcast.to(socket.game.id).emit('addPlayerToList', _.pick(socket.player, 'id', 'name'));
-
-        // Announce new Player joined & update other Player's Playerlist
         socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has joined this room');
 
-        socket.emit('gameStatus', socket.game);
-
         // Update Socket's lists
-        socket.emit('updatePlayerList',
-            Database.players.getMany(socket.game.players).map(function(item) {
-                return {
-                    id: item.id,
-                    name: item.name
-                };
-            })
-        );
-        socket.emit('updateGamelist', Database.games.map(function(item) {
-            return {
-                id: item.id,
-                name: item.name
-            };
-        }));
+        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
+        socket.emit('updateGameList', Database.games.listifyAll());
     });
 
 
     socket.on('startGame', function() {
-        console.log('Event: startGame:\n', JSON.stringify(socket.game.id, null, 4));
-
-        // Announce start of Game loop, initiate Game loop
         io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
-        socket.game.startGame();
+        socket.game.start();
     });
 
 
     socket.on('sendVote', function(target) {
-        console.log('Event: sendVote:\n', target);
-
-        if (socket.player.status == false) {
-            return console.log('Player lost and tried to vote.');
-        }
-
-        if (socket.game.current.state != sockt.game.states.created) {
+        if (socket.game.current.state != socket.game.states.playing) {
+            socket.emit('updateChat', 'Server', 'The game has not started, you cannot submit votes.');
             return console.log('Vote receieved for game that has not started');
         }
 
-        var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
-        if (result) {
-            socket.emit('voteStatus', target);
+        if (socket.game.current.players.has(socket.player.id)) {
+            socket.emit('updateChat', 'Server', 'You lost and can no longer submit votes to this game.');
+            return console.log('Player lost and tried to vote.');
         }
+
+        var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
+        if (result) { socket.emit('voteStatus', target); }
     });
 
 
-    // On exit of window, tab or connection in general
+    /*
+     * On exit of window, tab or connection in general
+     * 
+     * Give a grace period before clearing Socket's connections
+     * to Game Objects to prevent undefined errors if a Client opens and
+     * closes a window very quickly.
+     */
     socket.on('disconnect', function() {
-        console.log('Event: disconnect');
-
-        /*
-         * Give five second grace period before clearing Socket's connections
-         * to Game Objects to prevent undefined errors if a Client opens and
-         * closes a window very quickly.
-         */
         setTimeout(function() {
-            // Remove Socket's Player from other Socket's Clientsides
-            io.in(socket.game.id).emit('removePlayerFromList', _.pick(socket.player, 'id', 'name'));
-
             // Remove Socket's Player from current Game object
-            socket.game.unregisterPlayer(socket.player.id);
             socket.game.removePlayer(socket.player.id);
 
             // Announce Socket's departure to other Socket's in Game
@@ -299,11 +217,8 @@ io.sockets.on('connection', function(socket) {
             // Remove Socket's Player from global Game Collection
             Database.players.delete(socket.player.id);
 
-            console.log('Game Players:\n', Database.players.getMany(socket.game.players).map(function(item) { return item.name }).join(', '));
-            console.log('Player Collection:\n', Database.players.map(function(item) { return item.name }).join(', '));
-
             // Kill Socket's listener on Game's Socket Room
             socket.leave(socket.game.id);
-        }, 5000);
+        }, 1500)
     });
 });

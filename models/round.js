@@ -13,7 +13,7 @@ exports.create = function(players) {
 function Round(players) {
     this.id = utility.guid();
     this.players = players;
-    this.voted = new Set();
+    this.voted = [];
     this.ballot = ballot.create();
 };
 
@@ -25,5 +25,5 @@ Round.prototype.start = function() {
 // End Round, close Ballot and tally votes
 Round.prototype.end = function() {
     this.voted = this.ballot.close();
-    return _.difference(this.players, this.voted);
+    return this.voted;
 };
