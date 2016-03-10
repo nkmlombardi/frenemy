@@ -4,175 +4,241 @@ angular.module('app', [])
    .controller('MainController', function($scope) {
 
 
-    /*
-     * Client Side Collections
-     * These collections contain pointers in the form of ID's to objects on 
-     * the server side to be referenced.
-     */
-    $scope.games = [];
-    $scope.players = [];
-    $scope.messages = [];
+/*
+ * Client Side Collections
+ * These collections contain pointers in the form of ID's to objects on
+ * the server side to be referenced.
+ */
+    $scope.gamelist = [];
+    $scope.game = false;
+    $scope.player = false;
+    $scope.vote = false;
 
 
-    /*
-     * Client's Objects
-     * This contains complete Objects, not pointers of the client. A client 
-     * should only have access to their own Player and Game object, and only 
-     * references (not complete information) of other Players and Games.
-     */
-    $scope.client = {
-        game: false,
-        player: false,
-        vote: false
-    };
 
-    /*
-     * Keep the scroll position at the bottom of the page
-     */
-    function updateScroll(){
+/*
+ * Keep the scroll position at the bottom of the page
+ */
+    function updateScroll() {
         var element = document.getElementById("conversation");
         element.scrollTop = element.scrollHeight;
     }
 
 
-    /*
-     * Connection Events
-     * These are events that are triggered by new clients connecting to the 
-     * Frenemy server.
-     */
+
+/*
+ * Connection Events
+ * These are events that are triggered by new clients connecting to the
+ * Frenemy server.
+ */
     socket.on('connect', function() {
         console.log('Event: connect');
 
-        $scope.messages = [];
         socket.emit('playerLogin');
     });
 
 
-    /*
-     * Message Events
-     * These are events that are triggered by Message objects getting created 
-     * in the backend which are triggered by Player actions.
-     */
-    socket.on('updateChat', function(username, data) {
-        console.log('Event: updateChat', data);
 
-        $scope.messages.push({
-            timestamp: new Date(),
-            player: username,
-            content: data
+/*
+    Self Updating Events
+    These updates pertain to the Client's Player object. Any information
+    that is receieved only pertains to the Client and no one else.
+ */
+    /**
+     * Update a Client's Player object
+     * @param {object}     player
+     *     @param {string}     player.id
+     *     @param {string}     player.name
+     *     @param {string}     player.socketID
+     */
+    socket.on('updatePlayer', function(player) {
+        console.log('Event: updatePlayer', player);
+
+        $scope.player = player;
+    });
+
+    /**
+     * Update a Client's Game object
+     * @param {object}     game
+     */
+    socket.on('updateGame', function(game) {
+        console.log('Event: updateGame', game);
+
+        $scope.game = game;
+    });
+
+    /**
+     * Changes the Client's Player's vote target
+     * @param {string}     target
+     */
+    socket.on('updateVote', function(target) {
+        console.log('Event: resetVotes');
+
+        $scope.vote = target;
+    });
+
+
+
+/*
+    Client GameList Events
+    These updates pertain to the list of Game objects that are available for the
+    Client to join.
+ */
+    /**
+     * Update a Client's GameList
+     * @param {array}     games
+     *     @param {object}     game
+     *     @param {string}     game.id
+     *     @param {string}     game.name
+     */
+    socket.on('updateGamelist', function(games) {
+        console.log('Event: updateGamelist', games);
+
+        $scope.gamelist = games;
+        $scope.$apply();
+    });
+
+        /**
+         * Add a Game object to the Client's GameList
+         * @param {object}     game
+         * @param {string}     game.id
+         * @param {string}     game.name
+         */
+        socket.on('addGame', function(game) {
+            console.log('Event: addGame', game);
+
+            $scope.gamelist.push(game);
+            $scope.$apply();
         });
-        
+
+
+
+/*
+    Client Game Object Events
+    These updates pertain to the current Game object that the Client is
+    associated with.
+ */
+    /**
+     * Updates all of the entries in the Clientside Game's MessageList
+     * @param {array}     messages
+     *     @param {object}     message
+     *     @param {string}     message.id
+     *     @param {string}     message.playerID
+     *     @param {string}     message.content
+     */
+    socket.on('updateGameMessages', function(messages) {
+        console.log('Event: updateGameMessages', messages);
+
+        $scope.game.messages = messages;
         $scope.$apply();
         updateScroll();
     });
 
+        /**
+         * Adds a Message object to the MessageList
+         * @param {object}     message
+         * @param {string}     message.id
+         * @param {string}     message.playerID
+         * @param {string}     message.content
+         */
+        socket.on('addMessage', function(message) {
+            console.log('Event: addMessage', message);
 
-    /*
-     * Game Events
-     * These are events that are triggered by change of Game state (the game 
-     * loop), or other Player actions.
-     */
-    socket.on('gameStatus', function(game) {
-        console.log('Event: gameStatus', game);
-
-        $scope.client.game = game;
-
-        console.log('Self Object: ', $scope.client);
-    });
-
-    socket.on('updateGameList', function(games) {
-        console.log('Event: updateGamelist', games);
-
-        $scope.games = games;
-        $scope.$apply();
-    });
-
-    socket.on('addGameToList', function(game) {
-        console.log('Event: addGameToList', game);
-
-        $scope.games.push(game);
-        $scope.$apply();
-    });
-
-
-    /*
-     * Player Events
-     * These are events that are triggered by actions performed by other 
-     * Players in the current game, or by the Game loop.
-     */
-    socket.on('playerStatus', function(player) {
-        console.log('Event: playerStatus', player);
-
-        $scope.client.player = player;
-
-        console.log('Self Object: ', $scope.client);
-    });
-
-    socket.on('updatePlayerList', function(players) {
-        console.log('Event: updatePlayerList', players);
-
-        $scope.players = players;
-        $scope.$apply();
-    });
-
-    socket.on('addPlayerToList', function(player) {
-        console.log('Event: addPlayerToList', player);
-
-        $scope.players.push(player);
-        $scope.$apply();
-    });
-
-    socket.on('removePlayerFromList', function(player) {
-        console.log('Event: removePlayerFromList', player);
-
-        $scope.players = $scope.players.filter(function(item) {
-            return item.id != player.id;
+            $scope.game.messages.push(message);
+            $scope.$apply();
         });
 
+
+    /**
+     * Updates all of the entries in the Clientside Game's PlayerList
+     * @param {array}     players
+     *     @param {object}     player
+     *     @param {string}     player.id
+     *     @param {string}     player.name
+     */
+    socket.on('updateGamePlayers', function(players) {
+        console.log('Event: updateGamePlayers', players);
+
+        // Add Player based on Game.state
+        if ($scope.game.current.state === $scope.game.states.created) {
+            $scope.game.players = players;
+        } else if ($scope.game.current.state === $scope.game.states.playing) {
+            $scope.game.current.players = players;
+        } else {
+            console.log('Game.current.state prevents the updating of the Game PlayerList.');
+        }
+
         $scope.$apply();
     });
 
+        /**
+         * Adds a Player object to the PlayerList
+         * @param {object}     player
+         * @param {string}     player.id
+         * @param {string}     player.name
+         */
+        socket.on('addPlayer', function(player) {
+            console.log('Event: addPlayer', player);
 
-    /*
-     * Round Events
-     * These are events that are triggered by change of Game state (the game 
-     * loop), or other Player actions.
-     */
-    socket.on('resetVotes', function() {
-        console.log('Event: resetVotes');
+            // Add Player based on Game.state
+            if ($scope.game.current.state === $scope.game.states.created) {
+                $scope.game.players.push(player);
+            } else if ($scope.game.current.state === $scope.game.states.playing) {
+                $scope.game.current.players.push(player);
+            } else {
+                console.log('Game.current.state prevents the updating of the Game PlayerList.');
+            }
 
-        $scope.client.vote = false;
-    });
+            $scope.$apply();
+        });
 
-    socket.on('voteStatus', function(target) {
-        console.log('Event: resetVotes');
+        /**
+         * Removes a Player object to the PlayerList
+         * @param {object}     player
+         * @param {string}     player.id
+         * @param {string}     player.name
+         */
+        socket.on('removePlayer', function(player) {
+            console.log('Event: removePlayer', player);
 
-        if (target == false || target == undefined) {
-            $scope.client.vote = false;
-        }
-    });
+            // Add Player based on Game.state
+            if ($scope.game.current.state === $scope.game.states.created) {
+                $scope.game.players = $scope.game.players.filter(function(item) {
+                    return item.id != player.id;
+                });
+            } else if ($scope.game.current.state === $scope.game.states.playing) {
+                $scope.game.current.players = $scope.game.current.players.filter(function(item) {
+                    return item.id != player.id;
+                });
+            } else {
+                console.log('Game.current.state prevents the updating of the Game PlayerList.');
+            }
+
+            $scope.$apply();
+        });
 
 
-    /*
-     * Player Actions
-     * These are actions that can be performed by a connected client. Unlike 
-     * the previous functions, these are actions, and not listeners for events.
-     */
+
+/*
+ * Player Actions
+ * These are actions that can be performed by a connected client. Unlike
+ * the previous functions, these are actions, and not listeners for events.
+ */
     $scope.sendChat = function() {
         // Check for private message
-        if ($scope.client.game.current.state == 'STARTED' && $scope.message.charAt(0) == '@') {
-                console.log('Command: sendChat Private Message: ', $scope.message);
+        if ($scope.game.current.state == $scope.game.states.playing && $scope.message.charAt(0) == '@') {
+            console.log('Command: sendChat Private Message: ', $scope.message);
 
-                var playerName = $scope.message.split(' ')[0];
-                playerName = playerName.substr(1);
-                var message = $scope.message.split(' ').slice(1).join(' ');
+            var playerName = $scope.message.split(' ')[0];
+            playerName = playerName.substr(1);
+            var message = $scope.message.split(' ').slice(1).join(' ');
 
-                // Find specified Player object
-                var playerObj = $scope.players.filter(function ( player ) {
-                    return player.name == playerName;
-                })[0];
+            // Find specified Player object
+            var playerObj = $scope.players.filter(function ( player ) {
+                return player.name == playerName;
+            })[0];
 
-                socket.emit('sendChat', message, playerObj.id);
+            socket.emit('sendChat', message, playerObj.id);
         } else {
             console.log('Command: sendChat Public Message: ', $scope.message);
 
@@ -202,9 +268,9 @@ angular.module('app', [])
     };
 
     $scope.sendVote = function(targetID) {
-        console.log('Command: sendVote');
+        console.log('Command: sendVote', targetID);
 
-        if (targetID != $scope.client.player.id && $scope.client.game.current.state == 'STARTED') {
+        if (targetID != $scope.player.id && $scope.game.current.state === $scope.game.states.playing) {
             socket.emit('sendVote', targetID);
             $scope.client.vote = targetID;
         }

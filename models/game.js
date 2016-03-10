@@ -26,6 +26,8 @@ function Game(options) {
     this.timeout = options.timeout || 120000;
     this.players = new Set();
 
+    this.messages = [];
+
     this.losers = [];
     this.winners = [];
 
@@ -45,6 +47,55 @@ function Game(options) {
     };
 };
 
+Game.prototype.status = function(playerID) {
+    return {
+        id: this.id,
+        name: this.name,
+        players: Database.players.listifyMany(this.players),
+        states: this.states,
+        messages: Database.messages.getMany(this.messages).map(function(message) {
+            if (message.type === 'PUBLIC' || message.recipientID === playerID || message.senderID === playerID) {
+                return message.persist();
+            }
+            console.log('Skipped!');
+            return;
+        }),
+        current: {
+            state: this.current.state,
+            players: Database.players.listifyMany(this.current.players)
+        }
+    };
+}
+
+/**
+ * Detects the current state of the game, and adds a specified ID to the
+ * PlayerList depending on that state.
+ * @param {object}     message
+ */
+Game.prototype.addMessage = function(message, socket) {
+    if (message.type === message.types.public) {
+        global.io.in(this.id).emit('addMessage', message.persist());
+        return this.messages.push(message.id);
+
+    } else if (message.type === message.types.private) {
+        var recipient = Database.players.get(message.recipientID);
+
+        socket.emit('addMessage', message.persist());
+        socket.broadcast.to(recipient.socketID).emit('addMessage', message.persist());
+        return this.messages.push(message.id);
+
+    } else if (message.type === message.types.self) {
+        socket.emit('addMessage', message.persist());
+        return this.messages.push(message.id);
+
+    } else if (message.type === message.types.others) {
+        socket.broadcast.emit('addMessage', message.persist());
+        return this.messages.push(message.id);
+    }
+
+    console.log('Invalid Message.type, cannot send message.');
+    return false;
+};
 
 /*
     Detects the current state of the game, and adds a specified ID to the
@@ -52,11 +103,13 @@ function Game(options) {
  */
 Game.prototype.addPlayer = function(playerID) {
     if (this.current.state === this.states.created) {
-        global.io.in(this.id).emit('addPlayerToList', Database.players.listify(playerID));
+        global.io.in(this.id).emit('addPlayer', Database.players.listify(playerID));
         return this.players.add(playerID);
+
     } else if(this.current.state === this.states.playing) {
         console.error('Game.addPlayer() was called on a game that has already started.');
         return false;
+
     } else {
         console.error('Game.addPlayer() was called on a game that has ended.');
         return false;
@@ -69,12 +122,14 @@ Game.prototype.addPlayer = function(playerID) {
  */
 Game.prototype.removePlayer = function(playerID) {
     if (this.current.state === this.states.created) {
-        global.io.in(this.id).emit('removePlayerFromList', Database.players.listify(playerID));
+        global.io.in(this.id).emit('removePlayer', Database.players.listify(playerID));
         return this.players.delete(playerID);
+
     } else if(this.current.state === this.states.playing) {
-        global.io.in(this.id).emit('removePlayerFromList', Database.players.listify(playerID));
+        global.io.in(this.id).emit('removePlayer', Database.players.listify(playerID));
         this.losers.push(playerID);
         return this.current.players.delete(playerID);
+
     } else {
         console.error('Game.removePlayer() was called on a game that has ended.');
         return false;
@@ -160,7 +215,6 @@ Game.prototype.start = function() {
         }
 
         // Create Round object, push onto Game object
-
         this.current.round = Round.create(this.current.players);
         this.current.rounds.push(this.current.round);
 

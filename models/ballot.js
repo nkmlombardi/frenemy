@@ -65,7 +65,9 @@ Ballot.prototype.createVote = function(balloter, candidate) {
         candidate: candidate
     });
 
-    return this.votes;
+    console.log('Vote created!', balloter, candidate);
+
+    return true;
 };
 
 Ballot.prototype.removeVote = function(dVote) {

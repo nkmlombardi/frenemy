@@ -51,56 +51,95 @@ var lobby = Game.create({ name: 'Lobby' });
  */
 io.sockets.on('connection', function(socket) {
 
-    // Triggered when a new socket connects
+    /**
+     * Handle a new connection to the Frenemy server. Player provides no input
+     * as they are assigned an ID and name.
+     */
     socket.on('playerLogin', function() {
 
         // Create, register, and persist Player object
         socket.player = Player.create(socket.id);
-        socket.emit('playerStatus', socket.player);
+        socket.emit('updatePlayer', socket.player);
 
         // Join Lobby, add Player to Lobby
         socket.game = lobby;
         socket.join(socket.game.id);
+        socket.emit('updateGame', socket.game.status());
         socket.game.addPlayer(socket.player.id);
-        socket.emit('gameStatus', socket.game);
+        socket.emit('updateGamelist', Database.games.listifyAll());
 
-        // Announce Player login
-        io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has logged in.');
-        socket.emit('updateChat', 'Server', 'Welcome ' + socket.player.name + ', you have connected to Frenemy! The game is currently in Alpha stages so you may encounter some unpleasant bugs. Thank you for participating! You are currently in the Lobby.');
+        // Notify Players in Game of new Player connection
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'OTHERS',
+            content: 'Player ' + socket.player.name + ' has logged in'
+        }), socket);
 
-        // Update Socket's Player & Game lists
-        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
-        socket.emit('updateGameList', Database.games.listifyAll());
+        //
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: socket.player.id,
+            type: 'SELF',
+            content: 'Welcome ' + socket.player.name + ', you have connected to ' +
+            'Frenemy! The game is currently in Alpha stages so you may encounter ' +
+            'some unpleasant bugs. Thank you for participating! You are currently ' +
+            'in the Lobby.'
+        }), socket);
     });
 
 
-    // Triggered when chat message form submits
-    socket.on('sendChat', function(data, target) {
-        if (socket.chatFloodControl) { return socket.emit('updateChat', 'Server', 'Pump the brakes there chief...'); }
+    /**
+     * Handle new messages receieved from client side. All success, failure event
+     * emmittance is handled by the Game object.
+     * @param {string}     content
+     * @param {string}     target
+     */
+    socket.on('sendChat', function(content, target) {
+        // Flood control limiter
+        if (socket.chatFloodControl) {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'You were voted out and therefore lost your ability to send messages.'
+            }), socket);
+        }
 
+        // Player kicked limiter
         if (socket.game.current.state === socket.game.states.playing) {
             if (socket.game.current.players.has(socket.player.id)) {
-                socket.emit('updateChat', 'Server', 'You were voted out and therefore lost your ability to send messages.');
+                socket.game.addMessage(Message.create({
+                    gameID: socket.game.id,
+                    senderID: 0,
+                    type: 'SELF',
+                    content: 'You were voted out and therefore lost your ability to send messages.'
+                }), socket);
                 return console.log('Player lost and tried to send a message.');
             }
         }
 
+        // Handle private messages
         if (target !== undefined && socket.game.current.state == socket.game.states.playing) {
-            var player = Database.players.get(target);
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: socket.player.id,
+                recipientID: target,
+                type: 'PRIVATE',
+                content: content
+            }), socket);
 
-            // Update target's chat
-            socket.broadcast.to(player.socketID).emit('updateChat', 'Whisper from ' + socket.player.name + ': ', data);
-            Message.create(socket.player.id, socket.game.id, 'Whisper From ' + socket.player.name + ': ', data);
-
-            // Update sender's chat
-            Message.create(socket.player.id, socket.game.id, 'Whisper to ' + player.name + ': ', data);
-            socket.emit('updateChat', 'Whisper to ' + player.name + ': ', data);
-
+        // Handle public messages
         } else {
-            Message.create(socket.player.id, socket.game.id, data);
-            io.in(socket.game.id).emit('updateChat', socket.player.name, data);
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: socket.player.id,
+                type: 'PUBLIC',
+                content: content
+            }), socket);
         }
 
+        // Set flood control limiter
         socket.chatFloodControl = true;
         setTimeout(function() {
             socket.chatFloodControl = false;
@@ -184,24 +223,28 @@ io.sockets.on('connection', function(socket) {
 
 
     socket.on('sendVote', function(target) {
-        if (socket.game.current.state != socket.game.states.playing) {
+        console.log(socket.player.name + ' has voted for ' + Database.players.get(target));
+
+        if (socket.game.current.state !== socket.game.states.playing) {
             socket.emit('updateChat', 'Server', 'The game has not started, you cannot submit votes.');
             return console.log('Vote receieved for game that has not started');
         }
 
-        if (socket.game.current.players.has(socket.player.id)) {
+        if (!socket.game.current.players.has(socket.player.id)) {
             socket.emit('updateChat', 'Server', 'You lost and can no longer submit votes to this game.');
             return console.log('Player lost and tried to vote.');
         }
 
         var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
-        if (result) { socket.emit('voteStatus', target); }
+        if (result) { return socket.emit('voteStatus', target); }
+
+        return console.log('No vote was created!?');
     });
 
 
     /*
      * On exit of window, tab or connection in general
-     * 
+     *
      * Give a grace period before clearing Socket's connections
      * to Game Objects to prevent undefined errors if a Client opens and
      * closes a window very quickly.
