@@ -1,7 +1,11 @@
 var utility = require('../helpers/utility');
+var Database = require('../database');
 
-exports.create = function(socket) {
-    return new Player(socket);
+exports.create = function(socketID) {
+    var player = new Player(socketID);
+    Database.players.set(player.id, player);
+    
+    return player;
 };
 
 function Player(socketID) {

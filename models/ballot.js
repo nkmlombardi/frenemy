@@ -26,7 +26,7 @@ Ballot.prototype.randomizeVotes = function(argPlayers) {
     }
 };
 
-Ballot.prototype.closeBallot = function() {
+Ballot.prototype.close = function() {
     this.open = false;
 
     var countVotes = _.countBy(this.votes, function(vote) {
@@ -65,7 +65,9 @@ Ballot.prototype.createVote = function(balloter, candidate) {
         candidate: candidate
     });
 
-    return this.votes;
+    console.log('Vote created!', balloter, candidate);
+
+    return true;
 };
 
 Ballot.prototype.removeVote = function(dVote) {
