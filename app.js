@@ -73,13 +73,13 @@ io.sockets.on('connection', function(socket) {
             gameID: socket.game.id,
             senderID: 0,
             type: 'OTHERS',
-            content: 'Player ' + socket.player.name + ' has logged in'
+            content: 'Player ' + socket.player.name + ' has logged in.'
         }), socket);
 
-        //
+        // Send introduction message to Client
         socket.game.addMessage(Message.create({
             gameID: socket.game.id,
-            senderID: socket.player.id,
+            senderID: 0,
             type: 'SELF',
             content: 'Welcome ' + socket.player.name + ', you have connected to ' +
             'Frenemy! The game is currently in Alpha stages so you may encounter ' +
@@ -153,8 +153,14 @@ io.sockets.on('connection', function(socket) {
         // Create, register, and persist new Game object
         var newGame = Game.create({ timeout: 10000 });
 
-        // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
-        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
+        // Notify other Player's of Client's departure
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'OTHERS',
+            content: 'Player ' + socket.player.name + ' has left the game.'
+        }), socket);
+
         socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
@@ -168,13 +174,13 @@ io.sockets.on('connection', function(socket) {
         socket.game.addPlayer(socket.player.id);
 
         // Update Socket's Clientside
-        socket.emit('gameStatus', socket.game);
-        socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
-        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has joined this room');
-
-        // Update Socket's lists
-        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
-        socket.emit('updateGameList', Database.games.listifyAll());
+        socket.emit('updateGame', socket.game.status());
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'SELF',
+            content: 'You have connected to ' + socket.game.name
+        }), socket);
     });
 
 
@@ -188,11 +194,23 @@ io.sockets.on('connection', function(socket) {
         if (!selectedGame) { return console.log('Error: Game to join not found.'); }
 
         if (selectedGame.current.state === selectedGame.states.started) {
-            return socket.emit('updateChat', 'Server', 'That game has already started and cannot be joined.');
+            return socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'Cannot join, game currently in progress.'
+            }), socket);
         }
 
-        // Anounce departure, unregister from current Game, update clientside, disconnect from socket room
-        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has left the room.');
+        // Notify other Player's of Client's departure
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'OTHERS',
+            content: 'Player ' + socket.player.name + ' has left the game.'
+        }), socket);
+
+        // Remove Player from current Game
         socket.game.removePlayer(socket.player.id);
         socket.leave(socket.game.id);
 
@@ -206,19 +224,61 @@ io.sockets.on('connection', function(socket) {
         socket.game.addPlayer(socket.player.id);
 
         // Update Socket's Clientside
-        socket.emit('gameStatus', socket.game);
-        socket.emit('updateChat', 'Server', 'You have connected to ' + socket.game.name);
-        socket.broadcast.to(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has joined this room');
+        socket.emit('updateGame', socket.game.status());
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'SELF',
+            content: 'You have connected to ' + socket.game.name
+        }), socket);
 
-        // Update Socket's lists
-        socket.emit('updatePlayerList', Database.players.listifyMany(socket.game.players));
-        socket.emit('updateGameList', Database.games.listifyAll());
+        // Notify other Player's of Client's arrival
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'OTHERS',
+            content: 'Player ' + socket.player.name + ' has joined the game.'
+        }), socket);
     });
 
 
     socket.on('startGame', function() {
-        io.in(socket.game.id).emit('updateChat', 'Server', 'The game has just started!');
-        socket.game.start();
+        // Notify other Player's of Client's arrival
+        socket.game.addMessage(Message.create({
+            gameID: socket.game.id,
+            senderID: 0,
+            type: 'PUBLIC',
+            content: 'The game has been started...'
+        }), socket);
+
+        setTimeout(function() {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'PUBLIC',
+                content: '3...'
+            }), socket);
+        }, 1000);
+
+        setTimeout(function() {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'PUBLIC',
+                content: '2...'
+            }), socket);
+        }, 2000);
+
+        setTimeout(function() {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'PUBLIC',
+                content: '1...'
+            }), socket);
+        }, 3000);
+
+        setTimeout(socket.game.start(), 4000);
     });
 
 
@@ -226,17 +286,27 @@ io.sockets.on('connection', function(socket) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target));
 
         if (socket.game.current.state !== socket.game.states.playing) {
-            socket.emit('updateChat', 'Server', 'The game has not started, you cannot submit votes.');
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'The game has not started, you cannot submit votes.'
+            }), socket);
             return console.log('Vote receieved for game that has not started');
         }
 
         if (!socket.game.current.players.has(socket.player.id)) {
-            socket.emit('updateChat', 'Server', 'You lost and can no longer submit votes to this game.');
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'You lost and can no longer submit votes to this game.'
+            }), socket);
             return console.log('Player lost and tried to vote.');
         }
 
         var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
-        if (result) { return socket.emit('voteStatus', target); }
+        if (result) { return socket.emit('updateVote', target); }
 
         return console.log('No vote was created!?');
     });
@@ -254,8 +324,13 @@ io.sockets.on('connection', function(socket) {
             // Remove Socket's Player from current Game object
             socket.game.removePlayer(socket.player.id);
 
-            // Announce Socket's departure to other Socket's in Game
-            io.in(socket.game.id).emit('updateChat', 'Server', socket.player.name + ' has disconnected');
+            // Notify Players in Game of new Client's departure
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'OTHERS',
+                content: 'Player ' + socket.player.name + ' has logged out.'
+            }), socket);
 
             // Remove Socket's Player from global Game Collection
             Database.players.delete(socket.player.id);

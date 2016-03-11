@@ -12,7 +12,7 @@ var SortedArraySet = require("collections/sorted-array-set");
 exports.create = function(options) {
     var game = new Game(options);
     Database.games.set(game.id, game);
-    global.io.emit('addGameToList', { id: game.id, name: game.name });
+    global.io.emit('addGame', { id: game.id, name: game.name });
 
     return game;
 };
@@ -57,7 +57,6 @@ Game.prototype.status = function(playerID) {
             if (message.type === 'PUBLIC' || message.recipientID === playerID || message.senderID === playerID) {
                 return message.persist();
             }
-            console.log('Skipped!');
         }),
         current: {
             state: this.current.state,

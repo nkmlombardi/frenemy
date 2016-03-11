@@ -8,11 +8,11 @@
 <body>
     <div class="panel" ng-controller="MainController">
         <div class="panel-info">
-            <div class="section" ng-show="game.current.state === 'CREATED'">
+            <div class="section" ng-show="game.current.state === game.states.created">
                 <h2>Actions</h2>
                 <ul>
-                    <li ng-show="game.state !== game.states.playing" ng-click="createGame()">Create Game</li>
-                    <li ng-show="game.state !== game.states.playing" ng-click="startGame()">Start Game</li>
+                    <li ng-show="game.current.state !== game.states.playing" ng-click="createGame()">Create Game</li>
+                    <li ng-show="game.name !== 'Lobby'" ng-click="startGame()">Start Game</li>
                 </ul>
             </div>
 

@@ -262,7 +262,7 @@ angular.module('app', [])
     $scope.joinGame = function(id) {
         console.log('Command: joinGame');
 
-        if (id != $scope.client.game.id) {
+        if (id != $scope.game.id) {
             socket.emit('joinGame', id);
         }
     };
