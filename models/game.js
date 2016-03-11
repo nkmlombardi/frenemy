@@ -53,12 +53,11 @@ Game.prototype.status = function(playerID) {
         name: this.name,
         players: Database.players.listifyMany(this.players),
         states: this.states,
-        messages: Database.messages.getMany(this.messages).map(function(message) {
+        messages: Database.messages.getMany(this.messages).filter(function(message) {
             if (message.type === 'PUBLIC' || message.recipientID === playerID || message.senderID === playerID) {
                 return message.persist();
             }
             console.log('Skipped!');
-            return;
         }),
         current: {
             state: this.current.state,
