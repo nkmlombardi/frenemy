@@ -2,6 +2,7 @@
 var utility = require('../helpers/utility');
 var Database = require('../database');
 var Round = require('./round');
+var Message = require('./message');
 var _ = require('underscore');
 
 // Data Structures
@@ -28,8 +29,8 @@ function Game(options) {
 
     this.messages = [];
 
-    this.losers = [];
     this.winners = [];
+    this.losers = [];
 
     // States a Game object can be in
     this.states = Object.freeze({
@@ -61,7 +62,9 @@ Game.prototype.status = function(playerID) {
         current: {
             state: this.current.state,
             players: Database.players.listifyMany(this.current.players)
-        }
+        },
+        winners: Database.players.listifyMany(this.winners),
+        losers: Database.players.listifyMany(this.losers)
     };
 }
 
@@ -87,7 +90,7 @@ Game.prototype.addMessage = function(message, socket) {
         return this.messages.push(message.id);
 
     } else if (message.type === message.types.others) {
-        socket.broadcast.emit('addMessage', message.persist());
+        socket.broadcast.to(this.id).emit('addMessage', message.persist());
         return this.messages.push(message.id);
     }
 
@@ -146,6 +149,9 @@ Game.prototype.start = function() {
     this.current.players = this.players.clone();
     this.current.state = this.states.playing;
 
+    // Update Player's Game object before gameLoop
+    global.io.in(this.id).emit('updateGame', this.status());
+
     /*
      * On defined interval, end previous round and create new round. The bind
      * function is in place to allow use of this object inside of the function.
@@ -155,7 +161,12 @@ Game.prototype.start = function() {
     var gameLoop = _.bind(function() {
         // If this isn't the first round, close previous round
         if (this.current.rounds.length != 0) {
-            global.io.in(this.id).emit('updateChat', 'Server', 'Round has ended.');
+            this.addMessage(Message.create({
+                gameID: this.id,
+                senderID: 0,
+                type: 'PUBLIC',
+                content: 'The round has ended.'
+            }), global.io);
 
             // Conclude Round, determine losers
             var voted = this.current.round.end();
@@ -164,26 +175,45 @@ Game.prototype.start = function() {
 
             // Determine if voted players tied for win
             if (this.current.players.length === voted.length) {
-                var players = Database.players.listifyMany(voted).map(function(player) { return player.name });
-                global.io.in(this.id).emit('updateChat', 'Server', 'The following players have have won the game: ' + players.join(', '));
+                var players = Database.players.listifyMany(voted).map(function(player) { return player.name; });
+
+                this.addMessage(Message.create({
+                    gameID: this.id,
+                    senderID: 0,
+                    type: 'PUBLIC',
+                    content: 'The following players have won the game: ' + players.join(', ')
+                }), global.io);
 
                 // Victory cleanup logic
                 this.winners = voted;
                 this.current.state = this.states.completed;
-                global.io.in(this.id).emit('gameStatus', this);
+                global.io.in(this.id).emit('updateGame', this);
                 return clearInterval(loopInterval);
             }
 
             // If no votes were submitted, remove random Player
             if (voted.length === 0) {
                 var player = Database.players.listify(this.current.players.one());
-                global.io.in(this.id).emit('updateChat', 'Server', 'No votes received, random player lost: ' + player.name);
+
+                this.addMessage(Message.create({
+                    gameID: this.id,
+                    senderID: 0,
+                    type: 'PUBLIC',
+                    content: 'No votes received, random player lost: ' + player.name
+                }), global.io);
+
                 this.removePlayer(player.id);
 
             // Otherwise remove all Players tied for most votes
             } else {
                 var players = Database.players.listifyMany(voted).map(function(player) { return player.name });
-                global.io.in(this.id).emit('updateChat', 'Server', 'The following players have lost: ' + players.join(', '));
+
+                this.addMessage(Message.create({
+                    gameID: this.id,
+                    senderID: 0,
+                    type: 'PUBLIC',
+                    content: 'The following players have lost: ' + players.join(', ')
+                }), global.io);
 
                 // Remove each loser
                 voted.forEach(function(loser) {
@@ -202,12 +232,18 @@ Game.prototype.start = function() {
                 }
 
                 var winner = Database.players.get(this.current.players.only());
-                global.io.in(this.id).emit('updateChat', 'Server', 'The following player has won the game: ' + winner.name);
+
+                this.addMessage(Message.create({
+                    gameID: this.id,
+                    senderID: 0,
+                    type: 'PUBLIC',
+                    content: 'The following player has won the game: ' + winner.name
+                }), global.io);
 
                 // Victory cleanup logic
                 this.winners.push(winner.id);
                 this.current.state = this.states.completed;
-                global.io.in(this.id).emit('gameStatus', this);
+                global.io.in(this.id).emit('gameStatus', this.status());
                 return clearInterval(loopInterval);
             }
         }
@@ -219,20 +255,26 @@ Game.prototype.start = function() {
         // Start Round & Ballot listener
         this.current.round.start();
 
-        global.io.in(this.id).emit('gameStatus', this);
+        global.io.in(this.id).emit('gameStatus', this.status());
         global.io.in(this.id).emit('resetVotes');
 
         // Persist PlayerList
 
         var playerNames = _.pluck(Database.players.getMany(this.current.players), 'name');
 
-        global.io.in(this.id).emit('updateChat', 'Server', 'Round ' + this.current.rounds.length + ' has begun!');
-        global.io.in(this.id).emit('updateChat', 'Server', 'Remaining Players: ' + playerNames.join(', '));
+        this.addMessage(Message.create({
+            gameID: this.id,
+            senderID: 0,
+            type: 'PUBLIC',
+            content: 'Round ' + this.current.rounds.length + ' has begun!'
+        }), global.io);
 
-        // console.log(this.current.round);
-        // console.log(this.current.rounds);
-
-        // Persist Game Status
+        this.addMessage(Message.create({
+            gameID: this.id,
+            senderID: 0,
+            type: 'PUBLIC',
+            content: 'Remaining Players: ' + playerNames.join(', ')
+        }), global.io);
 
     }, this);
 

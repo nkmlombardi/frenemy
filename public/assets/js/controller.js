@@ -146,6 +146,7 @@ angular.module('app', [])
 
             $scope.game.messages.push(message);
             $scope.$apply();
+            updateScroll();
         });
 
 

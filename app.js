@@ -278,7 +278,9 @@ io.sockets.on('connection', function(socket) {
             }), socket);
         }, 3000);
 
-        setTimeout(socket.game.start(), 4000);
+        setTimeout(function() {
+            socket.game.start();
+        }, 4000);
     });
 
 
