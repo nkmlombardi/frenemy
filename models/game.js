@@ -107,7 +107,7 @@ Game.prototype.addPlayer = function(playerID) {
         global.io.in(this.id).emit('addPlayer', Database.players.listify(playerID));
         return this.players.add(playerID);
 
-    } else if(this.current.state === this.states.playing) {
+    } else if (this.current.state === this.states.playing) {
         console.error('Game.addPlayer() was called on a game that has already started.');
         return false;
 
@@ -124,11 +124,15 @@ Game.prototype.addPlayer = function(playerID) {
 Game.prototype.removePlayer = function(playerID) {
     if (this.current.state === this.states.created) {
         global.io.in(this.id).emit('removePlayer', Database.players.listify(playerID));
+
         return this.players.delete(playerID);
 
-    } else if(this.current.state === this.states.playing) {
-        global.io.in(this.id).emit('removePlayer', Database.players.listify(playerID));
+    } else if (this.current.state === this.states.playing) {
+        console.log('Event: removePlayer(' + playerID + ') | this.current.state = ' + this.current.state);
+
         this.losers.push(playerID);
+        global.io.in(this.id).emit('removePlayer', Database.players.listify(playerID));
+
         return this.current.players.delete(playerID);
 
     } else {
@@ -143,14 +147,19 @@ Game.prototype.removePlayer = function(playerID) {
  */
 Game.prototype.start = function() {
     // Check to see if Game object is actually a Lobby, and not a real Game
-    if (this.timeout === 0) { return console.log('Attempt was made to start a lobby Game instance.'); }
+    if (this.timeout === 0) {
+        return console.log('Attempt was made to start a lobby Game instance.');
+    }
 
     // Initialize game state variables
-    this.current.players = this.players.clone();
     this.current.state = this.states.playing;
+    this.current.players = this.players.clone();
+    this.messages = [];
 
     // Update Player's Game object before gameLoop
-    global.io.in(this.id).emit('updateGame', this.status());
+    global.io.in(this.id).emit('updateGameState', this.current.state);
+    global.io.in(this.id).emit('updateGamePlayers', Database.players.listifyMany(this.current.players));
+    global.io.in(this.id).emit('updateGameMessages', this.messages);
 
     /*
      * On defined interval, end previous round and create new round. The bind
@@ -172,10 +181,13 @@ Game.prototype.start = function() {
             var voted = this.current.round.end();
 
             console.log('Receieved ' + voted.length + ' votes this round');
+            console.log('Voted object: ', voted);
 
             // Determine if voted players tied for win
             if (this.current.players.length === voted.length) {
-                var players = Database.players.listifyMany(voted).map(function(player) { return player.name; });
+                var players = Database.players.listifyMany(voted).map(function(player) {
+                    return player.name;
+                });
 
                 this.addMessage(Message.create({
                     gameID: this.id,
@@ -187,7 +199,10 @@ Game.prototype.start = function() {
                 // Victory cleanup logic
                 this.winners = voted;
                 this.current.state = this.states.completed;
-                global.io.in(this.id).emit('updateGame', this);
+
+                global.io.in(this.id).emit('updateGameState', this.current.state);
+                global.io.in(this.id).emit('updateGameWinners', Database.players.listifyMany(this.winners));
+
                 return clearInterval(loopInterval);
             }
 
@@ -204,9 +219,11 @@ Game.prototype.start = function() {
 
                 this.removePlayer(player.id);
 
-            // Otherwise remove all Players tied for most votes
+                // Otherwise remove all Players tied for most votes
             } else {
-                var players = Database.players.listifyMany(voted).map(function(player) { return player.name });
+                var players = Database.players.listifyMany(voted).map(function(player) {
+                    return player.name;
+                });
 
                 this.addMessage(Message.create({
                     gameID: this.id,
@@ -216,8 +233,8 @@ Game.prototype.start = function() {
                 }), global.io);
 
                 // Remove each loser
-                voted.forEach(function(loser) {
-                    this.removePlayer(loser.id);
+                voted.forEach(function(playerID) {
+                    this.removePlayer(playerID);
                 }, this);
             }
 
@@ -227,12 +244,12 @@ Game.prototype.start = function() {
                 if ((this.current.players.length + this.losers.length) != this.players.length) {
                     console.log('Error: Winners + Losers count does not equal original PlayerList length when game was started.');
                 }
+
                 if (this.current.rounds.length > this.players.length) {
                     console.log('Error: There were more rounds than Players in the game.');
                 }
 
                 var winner = Database.players.get(this.current.players.only());
-
                 this.addMessage(Message.create({
                     gameID: this.id,
                     senderID: 0,
@@ -243,7 +260,10 @@ Game.prototype.start = function() {
                 // Victory cleanup logic
                 this.winners.push(winner.id);
                 this.current.state = this.states.completed;
-                global.io.in(this.id).emit('gameStatus', this.status());
+
+                global.io.in(this.id).emit('updateGameState', this.current.state);
+                global.io.in(this.id).emit('updateGameWinners', Database.players.listifyMany(this.winners));
+
                 return clearInterval(loopInterval);
             }
         }
@@ -254,8 +274,6 @@ Game.prototype.start = function() {
 
         // Start Round & Ballot listener
         this.current.round.start();
-
-        global.io.in(this.id).emit('gameStatus', this.status());
         global.io.in(this.id).emit('resetVotes');
 
         // Persist PlayerList

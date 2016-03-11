@@ -51,14 +51,12 @@ Ballot.prototype.close = function() {
 };
 
 
-Ballot.prototype.addVote = function(nVote) {
-    return this.votes.push(nVote);
-};
-
-Ballot.prototype.createVote = function(balloter, candidate) {
-    this.votes.filter(function(vote) {
+Ballot.prototype.addVote = function(balloter, candidate) {
+    this.votes = this.votes.filter(function(vote) {
         return vote.balloter !== balloter;
     });
+
+    console.log(this.votes);
 
     this.votes.push({
         balloter: balloter,
@@ -68,18 +66,4 @@ Ballot.prototype.createVote = function(balloter, candidate) {
     console.log('Vote created!', balloter, candidate);
 
     return true;
-};
-
-Ballot.prototype.removeVote = function(dVote) {
-    this.votes.filter(function(vote) {
-        return !_.isEqual(vote, dVote);
-    });
-    return this.votes;
-};
-
-Ballot.prototype.removeVoteByPlayerId = function(balloter) {
-    this.votes.filter(function(vote) {
-        return vote.balloter !== balloter;
-    });
-    return this.votes;
 };

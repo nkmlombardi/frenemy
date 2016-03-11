@@ -26,19 +26,16 @@
             </div>
 
             <div class="section">
-                <h2>Player List</h2>
+                <h2 ng-hide="game.current.state === game.states.completed">Player List</h2>
                 <ul class="players">
-                    <li ng-repeat="playerItem in game.players"
+                    <li ng-show="game.current.state === game.states.created" 
+                        ng-repeat="playerItem in game.players"
                         ng-click="sendVote(playerItem.id)"
                         ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">{{ playerItem.name }}</li>
-                </ul>
-            </div>
-
-            <div class="section" ng-show="game.losers.length > 0">
-                <h2 style="color: red">Losers</h2>
-                <ul class="players">
-                    <li ng-repeat="loser in game.losers"
-                        ng-class="{ 'self' : loser.id == player.id }">{{ loser.name }}</li>
+                    <li ng-show="game.current.state === game.states.playing" 
+                        ng-repeat="playerItem in game.current.players"
+                        ng-click="sendVote(playerItem.id)"
+                        ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">{{ playerItem.name }}</li>
                 </ul>
             </div>
 
@@ -47,6 +44,14 @@
                 <ul class="players">
                     <li ng-repeat="winner in game.winners"
                         ng-class="{ 'self' : winner.id == player.id }">{{ winner.name }}</li>
+                </ul>
+            </div>
+
+            <div class="section" ng-show="game.losers.length > 0">
+                <h2 style="color: red">Losers</h2>
+                <ul class="players">
+                    <li ng-repeat="loser in game.losers"
+                        ng-class="{ 'self' : loser.id == player.id }">{{ loser.name }}</li>
                 </ul>
             </div>
         </div>

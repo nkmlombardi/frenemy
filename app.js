@@ -307,7 +307,7 @@ io.sockets.on('connection', function(socket) {
             return console.log('Player lost and tried to vote.');
         }
 
-        var result = socket.game.current.round.ballot.createVote(socket.player.id, target);
+        var result = socket.game.current.round.ballot.addVote(socket.player.id, target);
         if (result) { return socket.emit('updateVote', target); }
 
         return console.log('No vote was created!?');
@@ -324,21 +324,25 @@ io.sockets.on('connection', function(socket) {
     socket.on('disconnect', function() {
         setTimeout(function() {
             // Remove Socket's Player from current Game object
-            socket.game.removePlayer(socket.player.id);
+            if (socket.game) {
+                socket.game.removePlayer(socket.player.id);
 
-            // Notify Players in Game of new Client's departure
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'OTHERS',
-                content: 'Player ' + socket.player.name + ' has logged out.'
-            }), socket);
+                // Notify Players in Game of new Client's departure
+                socket.game.addMessage(Message.create({
+                    gameID: socket.game.id,
+                    senderID: 0,
+                    type: 'OTHERS',
+                    content: 'Player ' + socket.player.name + ' has logged out.'
+                }), socket);
 
-            // Remove Socket's Player from global Game Collection
-            Database.players.delete(socket.player.id);
+                // Kill Socket's listener on Game's Socket Room
+                socket.leave(socket.game.id);
+            }
 
-            // Kill Socket's listener on Game's Socket Room
-            socket.leave(socket.game.id);
+            if (socket.player) {
+                // Remove Socket's Player from global Game Collection
+                Database.players.delete(socket.player.id);
+            }
         }, 1500)
     });
 });

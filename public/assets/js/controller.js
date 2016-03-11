@@ -34,6 +34,12 @@ angular.module('app', [])
     socket.on('connect', function() {
         console.log('Event: connect');
 
+        // Reset scope variables on socket refresh
+        $scope.gamelist = [];
+        $scope.game = false;
+        $scope.player = false;
+        $scope.vote = false;
+
         socket.emit('playerLogin');
     });
 
@@ -46,35 +52,78 @@ angular.module('app', [])
  */
     /**
      * Update a Client's Player object
-     * @param {object}     player
-     *     @param {string}     player.id
-     *     @param {string}     player.name
-     *     @param {string}     player.socketID
+     * @param {object}      player
+     *     @param {string}      player.id
+     *     @param {string}      player.name
+     *     @param {string}      player.socketID
      */
     socket.on('updatePlayer', function(player) {
         console.log('Event: updatePlayer', player);
 
         $scope.player = player;
+        $scope.$apply();
     });
 
     /**
      * Update a Client's Game object
-     * @param {object}     game
+     * @param {object}      game
      */
     socket.on('updateGame', function(game) {
         console.log('Event: updateGame', game);
 
         $scope.game = game;
+        $scope.$apply();
     });
+
+        /**
+         * Update a Client's Game's Status
+         * @param {array}       game
+         */
+        socket.on('updateGameState', function(state) {
+            console.log('Event: updateGameState', state);
+
+            $scope.game.current.state = state;
+            $scope.$apply();
+        });
+
+        /**
+         * Update a Client's Game's Winners
+         * @param {array}       winners
+         * @param {object}      player
+         *     @param {string}      player.id
+         *     @param {string}      player.name
+         */
+        socket.on('updateGameWinners', function(winners) {
+            console.log('Event: updateGameWinners', winners);
+
+            $scope.game.winners = winners;
+            $scope.$apply();
+        });
+
+        /**
+         * Update a Client's Game's Losers
+         * @param {array}       losers
+         * @param {object}      player
+         *     @param {string}      player.id
+         *     @param {string}      player.name
+         */
+        socket.on('addGameLoser', function(loser) {
+            console.log('Event: addGameLoser', loser);
+
+            $scope.game.losers.push(loser);
+            $scope.$apply();
+        });
+
 
     /**
      * Changes the Client's Player's vote target
      * @param {string}     target
      */
     socket.on('updateVote', function(target) {
-        console.log('Event: resetVotes');
+        console.log('Event: updateVote', target);
 
         $scope.vote = target;
+        $scope.$apply();
     });
 
 
@@ -211,6 +260,7 @@ angular.module('app', [])
                 $scope.game.current.players = $scope.game.current.players.filter(function(item) {
                     return item.id != player.id;
                 });
+                $scope.game.losers.push(player);
             } else {
                 console.log('Game.current.state prevents the updating of the Game PlayerList.');
             }
@@ -273,7 +323,7 @@ angular.module('app', [])
 
         if (targetID != $scope.player.id && $scope.game.current.state === $scope.game.states.playing) {
             socket.emit('sendVote', targetID);
-            $scope.client.vote = targetID;
+            // $scope.vote = targetID;
         }
     };
 });
