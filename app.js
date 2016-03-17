@@ -284,8 +284,38 @@ io.sockets.on('connection', function(socket) {
     });
 
 
-    socket.on('sendVote', function(target) {
+    socket.on('addVote', function(target) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target));
+
+        if (socket.game.current.state !== socket.game.states.playing) {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'The game has not started, you cannot submit votes.'
+            }), socket);
+            return console.log('Vote receieved for game that has not started');
+        }
+
+        if (!socket.game.current.players.has(socket.player.id)) {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'You lost and can no longer submit votes to this game.'
+            }), socket);
+            return console.log('Player lost and tried to vote.');
+        }
+
+        var result = socket.game.current.round.ballot.addVote(socket.player.id, target);
+        if (result) { return socket.emit('updateVote', target); }
+
+        return console.log('No vote was created!?');
+    });
+
+
+    socket.on('removeVote', function(target) {
+        console.log(socket.player.name + ' has removed a vote for ' + Database.players.get(target));
 
         if (socket.game.current.state !== socket.game.states.playing) {
             socket.game.addMessage(Message.create({

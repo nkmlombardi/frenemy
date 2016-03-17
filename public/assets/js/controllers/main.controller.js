@@ -318,12 +318,22 @@ angular.module('app', [])
         }
     };
 
-    $scope.sendVote = function(targetID) {
-        console.log('Command: sendVote', targetID);
+    $scope.addVote = function(targetID) {
+        console.log('Command: addVote', targetID);
 
         if (targetID != $scope.player.id && $scope.game.current.state === $scope.game.states.playing) {
-            socket.emit('sendVote', targetID);
+            socket.emit('addVote', targetID);
             // $scope.vote = targetID;
         }
     };
+
+    $scope.removeVote = function(targetID) {
+        console.log('Command: removeVote', targetID);
+
+        if (targetID != $scope.player.id && $scope.game.current.state === $scope.game.states.playing) {
+            socket.emit('removeVote', targetID);
+            // $scope.vote = targetID;
+        }
+    };
+
 });

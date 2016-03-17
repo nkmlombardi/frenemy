@@ -31,10 +31,11 @@
                     <li ng-show="game.current.state === game.states.created" 
                         ng-repeat="playerItem in game.players"
                         ng-click="sendVote(playerItem.id)"
-                        ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">{{ playerItem.name }}</li>
+                        ng-class="{ 'self' : playerItem.id == player.id }">{{ playerItem.name }}</li>
                     <li ng-show="game.current.state === game.states.playing" 
                         ng-repeat="playerItem in game.current.players"
-                        ng-click="sendVote(playerItem.id)"
+                        ng-click="addVote(playerItem.id)"
+                        ng-right-click="removeVote(playerItem.id)"
                         ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">{{ playerItem.name }}</li>
                 </ul>
             </div>
@@ -43,7 +44,7 @@
                 <h2 style="color: green">Winners!</h2>
                 <ul class="players">
                     <li ng-repeat="winner in game.winners"
-                        ng-class="{ 'self' : winner.id == player.id }">{{ winner.name }}</li>
+                        ng-class="{ 'self' : winner.id == winner.id }">{{ winner.name }}</li>
                 </ul>
             </div>
 
@@ -51,7 +52,7 @@
                 <h2 style="color: red">Losers</h2>
                 <ul class="players">
                     <li ng-repeat="loser in game.losers"
-                        ng-class="{ 'self' : loser.id == player.id }">{{ loser.name }}</li>
+                        ng-class="{ 'self' : loser.id == loser.id }">{{ loser.name }}</li>
                 </ul>
             </div>
         </div>
@@ -80,6 +81,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 
     <!-- Application Logic -->
-    <script src="assets/js/controller.js"></script>
+    <script src="assets/js/controllers/main.controller.js"></script>
+    <script src="assets/js/directives/right-click.directive.js"></script>
 </body>
 </html>

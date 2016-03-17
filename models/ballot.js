@@ -3,15 +3,16 @@ var utility = require('../helpers/utility');
 var Database = require('../database');
 var _ = require('underscore');
 
-exports.create = function() {
-    return new Ballot();
+exports.create = function(options) {
+    return new Ballot(options);
 };
 
-function Ballot(id) {
+function Ballot(options) {
     this.id = utility.guid();
     this.votes = [];
-    this.open = true;
+    this.players = [];
     this.results = [];
+    this.open = true;
 };
 
 
@@ -26,22 +27,53 @@ Ballot.prototype.randomizeVotes = function(argPlayers) {
     }
 };
 
+
 Ballot.prototype.close = function() {
+    var flatten = function (ary) {
+        var ret = [];
+        for (var i = 0; i < ary.length; i++) {
+            if (Array.isArray(ary[i])) {
+                ret = ret.concat(flatten(ary[i]));
+            } else {
+                ret.push(ary[i]);
+            }
+        }
+        return ret;
+    };
+
+
     this.open = false;
 
-    var countVotes = _.countBy(this.votes, function(vote) {
-        return vote.candidate;
+    console.log('This votes: ', this.votes);
+
+    /* 
+        Flatten the array of votes into one array with all the votes, with no
+        consideration of who submitted each vote. This makes it easier to 
+        iterate over and count up the votes for each candidate.
+    */
+    var flatBallot = [[0, 1], [2, 3], [4, 5]].reduce(function(a, b) {
+      return a.concat(b);
+    }, []);
+
+    console.log('flatBallot: ', this.votes);
+    console.log('flatBallot: ', flatBallot);
+
+    // Group candidate ID's and count occurences of the ID in the flatBallot
+    var voteCounts = _.countBy(flatBallot, function(candidateID) {
+        return candidateID;
     });
 
-    console.log('ballot count votes: ', countVotes);
+    console.log('Ballot count votes: ', voteCounts);
 
-    var maxValue = _.max(countVotes, function(value) {
+    // Determine the candidates tied for the most votes
+    var maxValue = _.max(voteCounts, function(value) {
         return value;
     });
 
-    console.log('ballot max value: ', maxValue);
+    console.log('Ballot max value: ', maxValue);
 
-    _.each(countVotes, function(val, key) {
+    // Filter candidates with most votes out of array into new one
+    _.each(voteCounts, function(val, key) {
         if (val == maxValue) {
             this.results.push(key);
         }
@@ -51,19 +83,40 @@ Ballot.prototype.close = function() {
 };
 
 
-Ballot.prototype.addVote = function(balloter, candidate) {
-    this.votes = this.votes.filter(function(vote) {
-        return vote.balloter !== balloter;
-    });
+/**
+ * Adds a Vote to the Ballot, limited by Player tokens
+ * @param {string}     balloter
+ * @param {string}     candidate
+ */
+Ballot.prototype.addVote = function(balloterID, candidateID) {
+    var balloter = Database.players.get(balloterID);
 
-    console.log(this.votes);
+    // Stack Overflow: http://stackoverflow.com/questions/2647867/how-to-determine-if-variable-is-undefined-or-null
+    if (this.votes[balloterID] == null) {
+        this.votes[balloterID] = [candidateID];
+    } else {
+        this.votes[balloterID].push(candidateID);
+    }
 
-    this.votes.push({
-        balloter: balloter,
-        candidate: candidate
-    });
+    console.log('Vote created!', balloterID, candidateID);
+    return balloter.removeToken(1);
+};
 
-    console.log('Vote created!', balloter, candidate);
 
-    return true;
+/**
+ * Removes a Player object to the PlayerList
+ * @param {object}     player
+ * @param {string}     player.id
+ * @param {string}     player.name
+ */
+Ballot.prototype.removeVote = function(balloterID, candidateID) {
+    var balloter = Database.players.get(balloterID);
+
+    var found = this.votes[balloterID].indexOf(candidateID);
+    if (found !== -1) {
+        this.votes[balloterID].splice(found, 1);
+    }
+
+    console.log('Voted removed!', balloterID, candidateID);
+    return balloter.addToken(1);
 };
