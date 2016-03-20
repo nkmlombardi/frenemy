@@ -57,6 +57,8 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('playerLogin', function() {
 
+        console.log('New Player Connected!');
+
         // Create, register, and persist Player object
         socket.player = Player.create(socket.id);
         socket.emit('updatePlayer', socket.player);
@@ -151,7 +153,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('createGame', function() {
 
         // Create, register, and persist new Game object
-        var newGame = Game.create({ timeout: 10000 });
+        var newGame = Game.create({ timeout: 100000 });
 
         // Notify other Player's of Client's departure
         socket.game.addMessage(Message.create({
@@ -337,7 +339,7 @@ io.sockets.on('connection', function(socket) {
             return console.log('Player lost and tried to vote.');
         }
 
-        var result = socket.game.current.round.ballot.addVote(socket.player.id, target);
+        var result = socket.game.current.round.ballot.removeVote(socket.player.id, target);
         if (result) { return socket.emit('updateVote', target); }
 
         return console.log('No vote was created!?');

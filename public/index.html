@@ -31,12 +31,17 @@
                     <li ng-show="game.current.state === game.states.created" 
                         ng-repeat="playerItem in game.players"
                         ng-click="sendVote(playerItem.id)"
-                        ng-class="{ 'self' : playerItem.id == player.id }">{{ playerItem.name }}</li>
+                        ng-class="{ 'self' : playerItem.id == player.id }">
+                        <div class="player">{{ playerItem.name }}</div>
+                    </li>
+                    </li>
                     <li ng-show="game.current.state === game.states.playing" 
                         ng-repeat="playerItem in game.current.players"
-                        ng-click="addVote(playerItem.id)"
-                        ng-right-click="removeVote(playerItem.id)"
-                        ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">{{ playerItem.name }}</li>
+                        ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">
+                        <div class="player">{{ playerItem.name }}</div>
+                        <div class="action add" ng-click="addVote(playerItem.id)">+</div>
+                        <div class="action remove" ng-click="removeVote(playerItem.id)">-</div>
+                    </li>
                 </ul>
             </div>
 
@@ -44,7 +49,9 @@
                 <h2 style="color: green">Winners!</h2>
                 <ul class="players">
                     <li ng-repeat="winner in game.winners"
-                        ng-class="{ 'self' : winner.id == winner.id }">{{ winner.name }}</li>
+                        ng-class="{ 'self' : winner.id == winner.id }">
+                        <div class="player">{{ winner.name }}</div>
+                    </li>
                 </ul>
             </div>
 
@@ -52,7 +59,9 @@
                 <h2 style="color: red">Losers</h2>
                 <ul class="players">
                     <li ng-repeat="loser in game.losers"
-                        ng-class="{ 'self' : loser.id == loser.id }">{{ loser.name }}</li>
+                        ng-class="{ 'self' : loser.id == loser.id }">
+                        <div class="player">{{ loser.name }}</div>
+                    </li>
                 </ul>
             </div>
         </div>

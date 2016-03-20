@@ -116,3 +116,37 @@ html {
     float: left;
     height: 100%;
 }
+
+.panel-info ul.players li {
+    padding: 0;
+}
+
+/* Set element height equal to it's contents */
+.panel-info ul.players li:after {
+    clear: both;
+    content: "";
+    display: table;
+}
+
+.panel-info ul.players li div.player {
+    float: left;
+    width: 80%;
+    padding: 8px 12px;
+}
+
+.panel-info ul.players li div.action {
+    float: left;
+    width: 10%;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 20px;
+    padding: 8px;
+}
+
+.panel-info ul.players li div.add:hover {
+    background: rgba(119, 221, 119, 0.75);
+}
+
+.panel-info ul.players li div.remove:hover {
+    background: rgba(221, 119, 119, 0.75);
+}

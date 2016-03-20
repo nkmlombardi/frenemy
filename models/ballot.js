@@ -29,18 +29,6 @@ Ballot.prototype.randomizeVotes = function(argPlayers) {
 
 
 Ballot.prototype.close = function() {
-    var flatten = function (ary) {
-        var ret = [];
-        for (var i = 0; i < ary.length; i++) {
-            if (Array.isArray(ary[i])) {
-                ret = ret.concat(flatten(ary[i]));
-            } else {
-                ret.push(ary[i]);
-            }
-        }
-        return ret;
-    };
-
 
     this.open = false;
 
@@ -51,9 +39,12 @@ Ballot.prototype.close = function() {
         consideration of who submitted each vote. This makes it easier to 
         iterate over and count up the votes for each candidate.
     */
-    var flatBallot = [[0, 1], [2, 3], [4, 5]].reduce(function(a, b) {
-      return a.concat(b);
-    }, []);
+    function flattenBallot(ballot) {
+        return Object.keys(ballot).reduce(function (votes, player) {
+            return votes.concat(ballot[player]);
+        }, []);
+    }
+    var flatBallot = flattenBallot(this.votes);
 
     console.log('flatBallot: ', this.votes);
     console.log('flatBallot: ', flatBallot);
