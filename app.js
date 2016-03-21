@@ -28,11 +28,11 @@ var Message = require('./models/message');
 server.listen(8080);
 
 // Serve static files
-app.use(express.static('public'));
+app.use(express.static('ui/web'));
 
 // Resolve all paths to index
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/ui/web/index.html');
 });
 
 
@@ -104,7 +104,7 @@ io.sockets.on('connection', function(socket) {
                 gameID: socket.game.id,
                 senderID: 0,
                 type: 'SELF',
-                content: 'You were voted out and therefore lost your ability to send messages.'
+                content: 'Chill out and stop sending messages so fast. You\' be fine.. probably.'
             }), socket);
         }
 
@@ -373,8 +373,8 @@ io.sockets.on('connection', function(socket) {
 
             if (socket.player) {
                 // Remove Socket's Player from global Game Collection
-                Database.players.delete(socket.player.id);
+                // Database.players.delete(socket.player.id);
             }
-        }, 1500)
+        }, 2500)
     });
 });

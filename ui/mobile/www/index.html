@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <title>Frenemy</title>
+    <!-- <link href="lib/ionic/css/ionic.css" rel="stylesheet"> -->
+
+    <!-- External Libraries -->
+    <script src="http://localhost:8080/socket.io/socket.io.js"></script>
+
+    <script src="lib/ionic/js/ionic.bundle.js"></script>
+    <script src="lib/angular-socket-io/socket.js"></script>
+
+    <!-- cordova script (this will be a 404 during development) -->
+    <script src="cordova.js"></script>
+
+    <!-- IF using Sass (run gulp sass first), then uncomment below and remove the CSS includes above
+    -->
+    <link href="css/ionic.app.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- App Resources -->
+    <script src="js/app.js"></script>
+    <script src="js/controllers.js"></script>
+    <script src="js/routes.js"></script>
+    <script src="js/services.js"></script>
+    <script src="js/directives.js"></script>
+
+
+    <!-- Only required for Tab projects w/ pages in multiple tabs 
+        <script src="lib/ionicuirouter/ionicUIRouter.js"></script>
+    -->
+</head>
+
+<body ng-app="app" animation="slide-left-right-ios7">
+    <div ng-controller="AppCtrl" class="iphone-large">
+        <ion-nav-view></ion-nav-view>
+    </div>
+</body>
+
+</html>
