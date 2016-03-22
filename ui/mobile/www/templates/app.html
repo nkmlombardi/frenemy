@@ -3,8 +3,8 @@
         <ion-nav-bar class="bar-stable">
             <ion-nav-back-button class="button-icon ion-arrow-left-c"></ion-nav-back-button>
 
-            <ion-nav-buttons side="left" ng-show="game.current.state === game.states.created">
-                <button class="button button-icon button-clear ion-navicon" menu-toggle="left"></button>
+            <ion-nav-buttons side="left">
+                <button class="button button-icon button-clear ion-navicon" menu-toggle="left" ng-show="game.current.state === game.states.created"></button>
             </ion-nav-buttons>
 
             <ion-nav-buttons side="right">
@@ -22,15 +22,19 @@
 
         <ion-content padding="false" class="side-menu-left has-header">
             <ion-list>
-                <ion-item class="item-divider">Actions</ion-item>
-                <ion-item menu-close="" ng-show="game.current.state !== game.states.playing" ng-click="createGame()">Create Game</ion-item>
-                <ion-item menu-close="" ng-show="game.name !== 'Lobby'" ng-click="startGame()">Start Game</ion-item>
-                <ion-item class="item-divider">Games</ion-item>
-                <ion-item ng-repeat="gameItem in gamelist"
-                    ng-click="joinGame(gameItem.id)"
-                    ng-class="{ 'self' : game.id == gameItem.id }">
-                    {{ gameItem.name }}
-                </ion-item>
+                <div class="section" ng-show="game.current.state === game.states.created">
+                    <ion-item class="item-divider">Actions</ion-item>
+                    <ion-item menu-close="" ng-show="game.current.state !== game.states.playing" ng-click="createGame()">Create Game</ion-item>
+                    <ion-item menu-close="" ng-show="game.name !== 'Lobby'" ng-click="startGame()">Start Game</ion-item>
+                </div>
+                <div class="section">
+                    <ion-item class="item-divider">Games</ion-item>
+                    <ion-item ng-repeat="gameItem in gamelist"
+                        ng-click="joinGame(gameItem.id)"
+                        ng-class="{ 'self' : game.id == gameItem.id }">
+                        {{ gameItem.name }}
+                    </ion-item>
+                </div>
             </ion-list>
         </ion-content>
     </ion-side-menu>
@@ -42,7 +46,7 @@
 
         <ion-content padding="false" class="side-menu-right has-header">
             <ion-list>
-                <div class="section">
+                <div class="section" ng-hide="game.current.state == game.states.completed">
                     <ion-item class="item-divider">Playing</ion-item>
 
                     <!-- Unstarted Game -->
@@ -54,12 +58,12 @@
                     </ion-item>
 
                     <!-- Started Game -->
-                    <ion-item class="item-button-right" ng-show="game.current.state === game.states.playing" 
+                    <ion-item class="item-button-right row player-item" ng-show="game.current.state === game.states.playing" 
                         ng-repeat="playerItem in game.current.players"
                         ng-class="{ 'self' : playerItem.id == player.id, 'voted' : playerItem.id == vote }">
-                        <div class="player">{{ playerItem.name }}</div>
-                        <div class="action add" ng-click="addVote(playerItem.id)">+</div>
-                        <div class="action remove" ng-click="removeVote(playerItem.id)">-</div>
+                        <div class="col-80 player">{{ playerItem.name }}</div>
+                        <div class="col-10 action add" ng-click="addVote(playerItem.id)">+</div>
+                        <div class="col-10 action remove" ng-click="removeVote(playerItem.id)">-</div>
                     </ion-item>
                 </div>
 

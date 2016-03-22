@@ -15,3 +15,16 @@
 .actions textarea {
 	padding: 15px;
 }
+
+.section .player-item {
+	padding: 15px;
+}
+
+.section .player-item .player {
+	width: 70%;
+}
+
+.section .player-item .action {
+	text-align: center;
+	width: 15%;
+}
