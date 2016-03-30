@@ -16,18 +16,6 @@ function Ballot(options) {
 };
 
 
-Ballot.prototype.randomizeVotes = function(argPlayers) {
-    console.log(argPlayers);
-
-    for (var i = 0; i < argPlayers.length; i++) {
-        this.addVote({
-            balloter: argPlayers[i],
-            candidate: argPlayers[Math.floor(Math.random() * argPlayers.length)]
-        });
-    }
-};
-
-
 Ballot.prototype.close = function() {
 
     this.open = false;

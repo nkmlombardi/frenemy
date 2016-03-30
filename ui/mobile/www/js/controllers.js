@@ -290,28 +290,28 @@ angular.module('app.controllers', [])
         }
 
         // Check for private message
-        if ($scope.game.current.state == $scope.game.states.playing && $scope.message.content.charAt(0) == '@') {
+        if ($scope.message.content.charAt(0) == '@') {
             console.log('Command: sendChat Private Message: ', $scope.message.content);
 
             var playerName = $scope.message.content.split(' ')[0];
             playerName = playerName.substr(1);
             var message = $scope.message.content.split(' ').slice(1).join(' ');
 
-            console.log('stripped name ', playerName);
-
             // Find specified Player object
-            var playerObj = $scope.game.players.filter(function (player) {
-                console.log('iterating... ', player.name);
+            var playerObj = $scope.game.players.filter(function(player) {
                 return player.name == playerName;
             })[0];
+
+            console.log('PM Target: ', playerObj.id);
 
             socket.emit('sendChat', message, playerObj.id);
         } else {
             console.log('Command: sendChat Public Message: ', $scope.message.content);
 
             socket.emit('sendChat', $scope.message.content);
-            $scope.message.content = '';
         }
+        
+        $scope.message.content = '';
     };
 
     $scope.createGame = function() {
