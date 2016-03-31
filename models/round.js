@@ -19,7 +19,11 @@ function Round(players) {
 
 // Start Round
 Round.prototype.start = function() {
-    // Nothing at the moment
+
+    // Distribute Tokens
+    _.each(this.players, function(player) {
+        return player.addToken(5);
+    });
 };
 
 // End Round, close Ballot and tally votes

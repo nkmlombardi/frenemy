@@ -114,11 +114,12 @@ io.sockets.on('connection', function(socket) {
                 type: 'SELF',
                 content: 'Chill out and stop sending messages so fast. You\' be fine.. probably.'
             }), socket);
+            return;
         }
 
         // Player kicked limiter
         if (socket.game.current.state === socket.game.states.playing) {
-            if (socket.game.current.players.has(socket.player.id)) {
+            if (!socket.game.current.players.has(socket.player.id)) {
                 socket.game.addMessage(Message.create({
                     gameID: socket.game.id,
                     senderID: 0,
@@ -130,7 +131,9 @@ io.sockets.on('connection', function(socket) {
         }
 
         // Handle private messages
-        if (target !== undefined && socket.game.current.state == socket.game.states.playing) {
+        // && socket.game.current.state == socket.game.states.playing
+        if (target !== undefined) {
+            console.log('Private Message (' + target + '): ', content);
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
                 senderID: socket.player.id,

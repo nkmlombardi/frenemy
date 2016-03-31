@@ -72,7 +72,7 @@
                     <li ng-repeat="message in messages" style="background: {{ message.player }}">
                 -->
                 <li ng-repeat="message in game.messages">
-                    <div class="player">{{ message.sender.name }}</div>
+                    <div class="player">{{ (message.type == 'PRIVATE' ? (message.sender.id == player.id ? 'You whisper to ' + message.recipient.name : message.sender.name + ' whispers to you') : message.sender.name) }}</div>
                     <div class="message">{{ message.content }}</div>
                 </li>
             </ul>
@@ -91,6 +91,5 @@
 
     <!-- Application Logic -->
     <script src="assets/js/controllers/main.controller.js"></script>
-    <script src="assets/js/directives/right-click.directive.js"></script>
 </body>
 </html>
