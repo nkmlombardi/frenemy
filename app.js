@@ -249,43 +249,46 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('startGame', function() {
         // Notify other Player's of Client's arrival
-        socket.game.addMessage(Message.create({
-            gameID: socket.game.id,
-            senderID: 0,
-            type: 'PUBLIC',
-            content: 'The game has been started...'
-        }), socket);
+        // socket.game.addMessage(Message.create({
+        //     gameID: socket.game.id,
+        //     senderID: 0,
+        //     type: 'PUBLIC',
+        //     content: 'The game has been started...'
+        // }), socket);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '3...'
-            }), socket);
-        }, 1000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '3...'
+        //     }), socket);
+        // }, 1000);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '2...'
-            }), socket);
-        }, 2000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '2...'
+        //     }), socket);
+        // }, 2000);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '1...'
-            }), socket);
-        }, 3000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '1...'
+        //     }), socket);
+        // }, 3000);
 
-        setTimeout(function() {
-            socket.game.start();
-        }, 4000);
+        // setTimeout(function() {
+        //     socket.game.start();
+        // }, 4000);
+
+        // In the interest of development
+        socket.game.start();
     });
 
 
