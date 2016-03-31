@@ -4,7 +4,7 @@ var Database = require('../database');
 exports.create = function(socketID) {
     var player = new Player(socketID);
     Database.players.set(player.id, player);
-    
+
     return player;
 };
 
@@ -16,16 +16,19 @@ function Player(socketID) {
 };
 
 Player.prototype.addToken = function(amount) {
-    if (this.tokens < 0) {
-        this.tokens = this.tokens = amount;
-        Database.players.set(this.id, this);
+    console.log(this.name + ' has ' + this.tokens + ', is gaining ' + amount);
 
-        return this.tokens;
+    if (this.tokens < 0) {
+        console.log('Player: ' + this.id + ' has less than 0 tokens somehow.');
+        return false;
     }
 
-    console.log('Player: ' + this.id + ' has less than 0 tokens somehow.');
-    return false;
+    this.tokens += amount;
+    Database.players.set(this.id, this);
+
+    return this.tokens;
 }
+
 
 Player.prototype.removeToken = function(amount) {
     if (this.tokens < 0 || (this.tokens - amount) < 0) {

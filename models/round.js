@@ -1,10 +1,7 @@
 // Libraries
 var utility = require('../helpers/utility');
+var Database = require('../database');
 var ballot = require('./ballot');
-var _ = require('underscore');
-
-// Data Structures
-var Set = require("collections/set");
 
 exports.create = function(players) {
     return new Round(players);
@@ -19,10 +16,9 @@ function Round(players) {
 
 // Start Round
 Round.prototype.start = function() {
-
     // Distribute Tokens
-    _.each(this.players, function(player) {
-        return player.addToken(5);
+    this.players.forEach(function(player) {
+        return Database.players.get(player).addToken(5);
     });
 };
 
