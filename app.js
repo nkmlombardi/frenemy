@@ -14,7 +14,6 @@ var app = express();
 var http = require('http');
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
-var logger = require ('./helpers/log')();
 
 // Global Variables
 var Database = require('./database');
@@ -24,6 +23,9 @@ global.io = io;
 var Game = require('./models/game');
 var Player = require('./models/player');
 var Message = require('./models/message');
+//Logger gets set later so that the gameID can be passed
+var logger;
+
 
 // Listen on port
 server.listen(8080);
@@ -45,7 +47,7 @@ app.get('/', function(req, res) {
  * Push the created Game object to the global Game collection.
  */
 var lobby = Game.create({ name: 'Lobby' });
-
+logger = require ('./helpers/log')(lobby.id);
 
 /*
  * Socket Definitions
@@ -126,6 +128,9 @@ io.sockets.on('connection', function(socket) {
         // Handle private messages
         // && socket.game.current.state == socket.game.states.playing
         if (target !== undefined) {
+            if (socket.player.id !== 0){
+                logger.log('info', Database.players.listify(socket.player.id).name + ' sent a message to ' + Database.players.listify(target).name, socket.game.id);
+            }
             console.log('Private Message (' + target + '): ', content);
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
@@ -137,6 +142,9 @@ io.sockets.on('connection', function(socket) {
 
         // Handle public messages
         } else {
+            if (socket.player.id !== 0){
+                logger.log('info', Database.players.listify(socket.player.id).name + ' sent a public message', socket.game.id);
+            }
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
                 senderID: socket.player.id,

@@ -1,5 +1,4 @@
 var utility = require('../helpers/utility');
-var logger = require ('../helpers/log')();
 var Database = require('../database');
 
 exports.create = function(options) {
@@ -26,9 +25,6 @@ function Message(options) {
 
 Message.prototype.persist = function() {
     if (this.type === this.types.public) {
-        if (this.senderID !== 0){
-            logger.log('info', Database.players.listify(this.senderID).name + ' sent a public message');
-        }
         return {
             id: this.id,
             sender: (this.senderID === 0 ? { id: this.senderID, name: 'Server' } : Database.players.listify(this.senderID)),
@@ -37,7 +33,6 @@ Message.prototype.persist = function() {
         };
 
     } else if (this.type === this.types.private) {
-        logger.log('info', Database.players.listify(this.senderID).name + ' sent a message to ' + Database.players.listify(this.recipientID).name);
         return {
             id: this.id,
             sender: (this.senderID == 0 ? { id: this.senderID, name: 'Server' } : Database.players.listify(this.senderID)),

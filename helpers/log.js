@@ -2,10 +2,11 @@
 
 var winston = require('winston');
 
-module.exports = function () {
+module.exports = function (gameID) {
+    console.log('In log.js exports, game id', 'is ' + gameID);
     var logger = new (winston.Logger)({
         transports: [
-            new (winston.transports.File)({ filename: './logs/logged_info.log' }),
+            new (winston.transports.File)({ filename: './logs/' + gameID + '_logged_info.log' }),
          ]
     })
 
