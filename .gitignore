@@ -2,5 +2,4 @@
 *.DS_Store
 .DS_Store
 node_modules/
-logged_info.log
-logs/games/
+logs/games/*.log
