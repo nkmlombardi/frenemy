@@ -14,18 +14,12 @@ var app = express();
 var http = require('http');
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
-var winston = require('winston');
+var logger = require('./helpers/log');
+//var utility = require('../helpers/utility');
 
 // Global Variables
 var Database = require('./database');
 global.io = io;
-
-// Logging Setup
-var logger = new (winston.Logger)({
-    transports: [
-      new (winston.transports.File)({ filename: 'logged_info.log' })
-    ]
-});
 
 // Frenemy Libraries
 var Game = require('./models/game');
@@ -299,7 +293,8 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('addVote', function(target) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target).name);
-        logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
+        //logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
+        logger.guid(1);
 
         if (socket.game.current.state !== socket.game.states.playing) {
             socket.game.addMessage(Message.create({

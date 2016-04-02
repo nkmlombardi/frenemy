@@ -22,7 +22,7 @@ Round.prototype.start = function() {
 
     // Distribute Tokens
     _.each(this.players, function(player) {
-        return player.addToken(5);
+        //return player.addToken(5);
     });
 };
 

@@ -4,18 +4,10 @@ var Database = require('../database');
 var Round = require('./round');
 var Message = require('./message');
 var _ = require('underscore');
-var winston = require('winston');
 
 // Data Structures
 var Set = require("collections/set");
 var SortedArraySet = require("collections/sorted-array-set");
-
-// Logging Setup
-var logger = new (winston.Logger)({
-    transports: [
-      new (winston.transports.File)({ filename: 'logged_info.log' })
-    ]
-});
 
 // Constructors
 exports.create = function(options) {
@@ -225,7 +217,7 @@ Game.prototype.start = function() {
                     content: 'No votes received, random player lost: ' + player.name
                 }), global.io);
                 
-                logger.log('info', 'Nobody voted, so we removed' + player.name);
+                //logger.log('info', 'Nobody voted, so we removed' + player.name);
 
                 this.removePlayer(player.id);
 
@@ -242,7 +234,7 @@ Game.prototype.start = function() {
                     content: 'The following players have lost: ' + players.join(', ')
                 }), global.io);
                 
-                logger.log('info', players.join(', ') + ' was/were voted off');
+                //logger.log('info', players.join(', ') + ' was/were voted off');
 
                 // Remove each loser
                 voted.forEach(function(playerID) {
@@ -269,7 +261,7 @@ Game.prototype.start = function() {
                     content: 'The following player has won the game: ' + winner.name
                 }), global.io);
                 
-                logger.log('info', winner.name + ' won');
+                //logger.log('info', winner.name + ' won');
 
                 // Victory cleanup logic
                 this.winners.push(winner.id);

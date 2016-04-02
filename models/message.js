@@ -1,13 +1,5 @@
 var utility = require('../helpers/utility');
 var Database = require('../database');
-var winston = require('winston');
-
-// Logging Setup
-var logger = new (winston.Logger)({
-    transports: [
-      new (winston.transports.File)({ filename: 'logged_info.log' })
-    ]
-});
 
 exports.create = function(options) {
     var message = new Message(options);
@@ -33,7 +25,7 @@ function Message(options) {
 
 Message.prototype.persist = function() {
     if (this.type === this.types.public) {
-        logger.log('info', this.senderID + 'sent a public message');
+        //logger.log('info', this.senderID + 'sent a public message');
         return {
             id: this.id,
             sender: (this.senderID === 0 ? { id: this.senderID, name: 'Server' } : Database.players.listify(this.senderID)),
@@ -42,7 +34,7 @@ Message.prototype.persist = function() {
         };
 
     } else if (this.type === this.types.private) {
-        logger.log('info', Database.players.listify(this.senderID) + 'sent a message to' + Database.players.listify(this.recipientID));
+        //logger.log('info', Database.players.listify(this.senderID) + 'sent a message to' + Database.players.listify(this.recipientID));
         return {
             id: this.id,
             sender: (this.senderID == 0 ? { id: this.senderID, name: 'Server' } : Database.players.listify(this.senderID)),
