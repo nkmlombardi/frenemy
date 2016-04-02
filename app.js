@@ -14,8 +14,7 @@ var app = express();
 var http = require('http');
 var server = http.createServer(app);
 var io = require('socket.io').listen(server);
-var logger = require('./helpers/log');
-//var utility = require('../helpers/utility');
+var logger = require ('./helpers/log')();
 
 // Global Variables
 var Database = require('./database');
