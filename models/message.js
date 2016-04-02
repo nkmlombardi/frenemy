@@ -26,7 +26,9 @@ function Message(options) {
 
 Message.prototype.persist = function() {
     if (this.type === this.types.public) {
-        logger.log('info', this.senderID.name + ' sent a public message');
+        if (this.senderID !== 0){
+            logger.log('info', Database.players.listify(this.senderID).name + ' sent a public message');
+        }
         return {
             id: this.id,
             sender: (this.senderID === 0 ? { id: this.senderID, name: 'Server' } : Database.players.listify(this.senderID)),
