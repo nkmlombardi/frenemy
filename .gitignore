@@ -3,4 +3,4 @@
 .DS_Store
 node_modules/
 logged_info.log
-logs/
+logs/games/
