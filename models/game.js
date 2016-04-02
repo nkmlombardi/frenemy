@@ -49,9 +49,9 @@ function Game(options) {
         rounds: [],
         round: false
     };
-    console.log('in', ' gamejs');
+    
+    //Setting gameID
     logger = require ('../helpers/log')(this.id);
-    console.log('still in', ' gamejs');
 };
 
 Game.prototype.status = function(playerID) {
@@ -208,6 +208,7 @@ Game.prototype.start = function() {
 
                 global.io.in(this.id).emit('updateGameState', this.current.state);
                 global.io.in(this.id).emit('updateGameWinners', Database.players.listifyMany(this.winners));
+                logger.close();
 
                 return clearInterval(loopInterval);
             }
@@ -275,6 +276,7 @@ Game.prototype.start = function() {
 
                 global.io.in(this.id).emit('updateGameState', this.current.state);
                 global.io.in(this.id).emit('updateGameWinners', Database.players.listifyMany(this.winners));
+                logger.close();
 
                 return clearInterval(loopInterval);
             }

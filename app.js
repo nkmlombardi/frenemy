@@ -165,6 +165,7 @@ io.sockets.on('connection', function(socket) {
 
         // Create, register, and persist new Game object
         var newGame = Game.create({ timeout: 100000 });
+        // Set the logger up with gameID
         logger = require ('./helpers/log')(newGame.id);
 
         // Notify other Player's of Client's departure
