@@ -1,5 +1,6 @@
 // Libraries
 var utility = require('../helpers/utility');
+var logger = require ('../helpers/log')();
 var Database = require('../database');
 var Round = require('./round');
 var Message = require('./message');
@@ -217,7 +218,7 @@ Game.prototype.start = function() {
                     content: 'No votes received, random player lost: ' + player.name
                 }), global.io);
                 
-                //logger.log('info', 'Nobody voted, so we removed' + player.name);
+                logger.log('info', 'Nobody voted, so we removed ' + player.name);
 
                 this.removePlayer(player.id);
 
@@ -234,7 +235,7 @@ Game.prototype.start = function() {
                     content: 'The following players have lost: ' + players.join(', ')
                 }), global.io);
                 
-                //logger.log('info', players.join(', ') + ' was/were voted off');
+                logger.log('info', players.join(', ') + ' was/were voted off');
 
                 // Remove each loser
                 voted.forEach(function(playerID) {
@@ -261,7 +262,7 @@ Game.prototype.start = function() {
                     content: 'The following player has won the game: ' + winner.name
                 }), global.io);
                 
-                //logger.log('info', winner.name + ' won');
+                logger.log('info', winner.name + ' won');
 
                 // Victory cleanup logic
                 this.winners.push(winner.id);
