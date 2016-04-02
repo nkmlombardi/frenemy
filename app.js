@@ -24,7 +24,7 @@ var Game = require('./models/game');
 var Player = require('./models/player');
 var Message = require('./models/message');
 //Logger gets set later so that the gameID can be passed
-var logger;
+var Logger = require('./helpers/log');
 
 
 // Listen on port
@@ -166,7 +166,7 @@ io.sockets.on('connection', function(socket) {
         // Create, register, and persist new Game object
         var newGame = Game.create({ timeout: 100000 });
         // Set the logger up with gameID
-        logger = require ('./helpers/log')(newGame.id);
+        var logger = Logger(newGame.id);
 
         // Notify other Player's of Client's departure
         socket.game.addMessage(Message.create({
