@@ -3,15 +3,16 @@ var utility = require('../helpers/utility');
 var Database = require('../database');
 var ballot = require('./ballot');
 
-exports.create = function(players) {
-    return new Round(players);
+exports.create = function(options) {
+    return new Round(options);
 };
 
-function Round(players) {
+function Round(options) {
     this.id = utility.guid();
-    this.players = players;
+    this.players = options.players;
     this.voted = [];
-    this.ballot = ballot.create();
+    this.ballot = ballot.create({ gameID: options.gameID });
+    this.gameID = options.gameID;
 };
 
 // Start Round

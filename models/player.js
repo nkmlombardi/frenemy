@@ -32,12 +32,12 @@ Player.prototype.addToken = function(amount) {
 
 Player.prototype.removeToken = function(amount) {
     if (this.tokens < 0 || (this.tokens - amount) < 0) {
-        this.tokens--;
-        Database.players.set(this.id, this);
-
-        return this.tokens;
+        console.log('Player: ' + this.id + ' does not have enough tokens to remove that amount.');
+        return false;
     }
 
-    console.log('Player: ' + this.id + ' does not have enough tokens to remove that amount.');
-    return false;
+    this.tokens--;
+    Database.players.set(this.id, this);
+
+    return this.tokens;
 }

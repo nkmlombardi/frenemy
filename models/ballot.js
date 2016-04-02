@@ -13,6 +13,7 @@ function Ballot(options) {
     this.players = [];
     this.results = [];
     this.open = true;
+    this.gameID = options.gameID;
 };
 
 
@@ -28,7 +29,7 @@ Ballot.prototype.close = function() {
         iterate over and count up the votes for each candidate.
     */
     function flattenBallot(ballot) {
-        return Object.keys(ballot).reduce(function (votes, player) {
+        return Object.keys(ballot).reduce(function(votes, player) {
             return votes.concat(ballot[player]);
         }, []);
     }
@@ -71,14 +72,21 @@ Ballot.prototype.addVote = function(balloterID, candidateID) {
     var balloter = Database.players.get(balloterID);
 
     // Stack Overflow: http://stackoverflow.com/questions/2647867/how-to-determine-if-variable-is-undefined-or-null
-    if (this.votes[balloterID] == null) {
-        this.votes[balloterID] = [candidateID];
-    } else {
-        this.votes[balloterID].push(candidateID);
-    }
+    var tokens = balloter.removeToken(1);
+    if (tokens !== false) {
+        if (this.votes[balloterID] == null) {
+            this.votes[balloterID] = [candidateID];
+        } else {
+            this.votes[balloterID].push(candidateID);
+        }
 
-    console.log('Vote created!', balloterID, candidateID);
-    return balloter.removeToken(1);
+        console.log('Vote created!', balloterID, candidateID);
+        return tokens;
+    } else {
+
+        console.log('Insufficient player tokens for vote.', balloterID, candidateID);
+        return false;
+    }
 };
 
 
@@ -91,11 +99,19 @@ Ballot.prototype.addVote = function(balloterID, candidateID) {
 Ballot.prototype.removeVote = function(balloterID, candidateID) {
     var balloter = Database.players.get(balloterID);
 
-    var found = this.votes[balloterID].indexOf(candidateID);
-    if (found !== -1) {
-        this.votes[balloterID].splice(found, 1);
-    }
+    var tokens = balloter.addToken(1);
+    if (tokens !== false) {
+        var found = this.votes[balloterID].indexOf(candidateID);
+        if (found !== -1) {
+            this.votes[balloterID].splice(found, 1);
 
-    console.log('Voted removed!', balloterID, candidateID);
-    return balloter.addToken(1);
+            console.log('Vote removed!', balloterID, candidateID);
+            return tokens;
+        }
+        
+        return false;
+    } else {
+        console.log('Insufficient player tokens for vote.', balloterID, candidateID);
+        return false;
+    }
 };
