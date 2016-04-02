@@ -49,7 +49,9 @@ function Game(options) {
         rounds: [],
         round: false
     };
+    console.log('in', ' gamejs');
     logger = require ('../helpers/log')(this.id);
+    console.log('still in', ' gamejs');
 };
 
 Game.prototype.status = function(playerID) {

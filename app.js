@@ -47,7 +47,6 @@ app.get('/', function(req, res) {
  * Push the created Game object to the global Game collection.
  */
 var lobby = Game.create({ name: 'Lobby' });
-logger = require ('./helpers/log')(lobby.id);
 
 /*
  * Socket Definitions
@@ -166,6 +165,7 @@ io.sockets.on('connection', function(socket) {
 
         // Create, register, and persist new Game object
         var newGame = Game.create({ timeout: 100000 });
+        logger = require ('./helpers/log')(newGame.id);
 
         // Notify other Player's of Client's departure
         socket.game.addMessage(Message.create({
