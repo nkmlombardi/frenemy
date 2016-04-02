@@ -293,8 +293,7 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('addVote', function(target) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target).name);
-        //logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
-        logger.log;
+        logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
 
         if (socket.game.current.state !== socket.game.states.playing) {
             socket.game.addMessage(Message.create({
