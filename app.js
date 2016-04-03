@@ -18,14 +18,12 @@ var io = require('socket.io').listen(server);
 // Global Variables
 var Database = require('./database');
 global.io = io;
+var game;
 
 // Frenemy Libraries
 var Game = require('./models/game');
 var Player = require('./models/player');
 var Message = require('./models/message');
-//Logger gets set later so that the gameID can be passed
-var Logger = require('./helpers/log');
-
 
 // Listen on port
 server.listen(8080);
@@ -57,6 +55,7 @@ io.sockets.on('connection', function(socket) {
      * Handle a new connection to the Frenemy server. Player provides no input
      * as they are assigned an ID and name.
      */
+    game = socket.game;
     socket.on('playerLogin', function() {
 
         console.log('New Player Connected!');
@@ -128,7 +127,7 @@ io.sockets.on('connection', function(socket) {
         // && socket.game.current.state == socket.game.states.playing
         if (target !== undefined) {
             if (socket.player.id !== 0){
-                logger.log('info', Database.players.listify(socket.player.id).name + ' sent a message to ' + Database.players.listify(target).name, socket.game.id);
+                socket.game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a message to ' + Database.players.listify(target).name, socket.game.id);
             }
             console.log('Private Message (' + target + '): ', content);
             socket.game.addMessage(Message.create({
@@ -142,7 +141,7 @@ io.sockets.on('connection', function(socket) {
         // Handle public messages
         } else {
             if (socket.player.id !== 0){
-                logger.log('info', Database.players.listify(socket.player.id).name + ' sent a public message', socket.game.id);
+                socket.game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a public message', socket.game.id);
             }
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
@@ -165,8 +164,6 @@ io.sockets.on('connection', function(socket) {
 
         // Create, register, and persist new Game object
         var newGame = Game.create({ timeout: 100000 });
-        // Set the logger up with gameID
-        var logger = Logger(newGame.id);
 
         // Notify other Player's of Client's departure
         socket.game.addMessage(Message.create({
@@ -301,7 +298,7 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('addVote', function(target) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target).name);
-        logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
+        socket.game.logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
 
         if (socket.game.current.state !== socket.game.states.playing) {
             socket.game.addMessage(Message.create({

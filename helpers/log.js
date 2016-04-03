@@ -2,7 +2,7 @@
 
 var winston = require('winston');
 
-module.exports = function Logger(gameID) {
+module.exports = function (gameID) {
     console.log('In log.js exports, game id', 'is ' + gameID);
     
     var logger = new (winston.Logger)({

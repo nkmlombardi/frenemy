@@ -5,7 +5,7 @@ var Round = require('./round');
 var Message = require('./message');
 var _ = require('underscore');
 //Logger gets set later so that the gameID can be passed
-var Logger = require('../helpers/log');
+var logger;
 
 
 // Data Structures
@@ -51,7 +51,7 @@ function Game(options) {
     };
     
     //Setting gameID
-    var logger = Logger(this.id);
+    logger = require('../helpers/log')(this.id);
 };
 
 Game.prototype.status = function(playerID) {
