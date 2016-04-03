@@ -18,7 +18,6 @@ var io = require('socket.io').listen(server);
 // Global Variables
 var Database = require('./database');
 global.io = io;
-var game;
 
 // Frenemy Libraries
 var Game = require('./models/game');
@@ -55,7 +54,6 @@ io.sockets.on('connection', function(socket) {
      * Handle a new connection to the Frenemy server. Player provides no input
      * as they are assigned an ID and name.
      */
-    game = socket.game;
     socket.on('playerLogin', function() {
 
         console.log('New Player Connected!');
@@ -100,6 +98,8 @@ io.sockets.on('connection', function(socket) {
      */
     socket.on('sendChat', function(content, target) {
         // Flood control limiter
+        var game = socket.game;
+        
         if (socket.chatFloodControl) {
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
@@ -127,7 +127,7 @@ io.sockets.on('connection', function(socket) {
         // && socket.game.current.state == socket.game.states.playing
         if (target !== undefined) {
             if (socket.player.id !== 0){
-                socket.game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a message to ' + Database.players.listify(target).name, socket.game.id);
+                game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a message to ' + Database.players.listify(target).name, socket.game.id);
             }
             console.log('Private Message (' + target + '): ', content);
             socket.game.addMessage(Message.create({
@@ -141,7 +141,7 @@ io.sockets.on('connection', function(socket) {
         // Handle public messages
         } else {
             if (socket.player.id !== 0){
-                socket.game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a public message', socket.game.id);
+                game.logger.log('info', Database.players.listify(socket.player.id).name + ' sent a public message', socket.game.id);
             }
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
@@ -297,8 +297,9 @@ io.sockets.on('connection', function(socket) {
 
 
     socket.on('addVote', function(target) {
+        var game = socket.game;
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target).name);
-        socket.game.logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
+        game.logger.log('info', socket.player.name + ' has voted for ' + Database.players.get(target).name);
 
         if (socket.game.current.state !== socket.game.states.playing) {
             socket.game.addMessage(Message.create({

@@ -15,6 +15,7 @@ module.exports = function (gameID) {
         log: function log(level, message) {
             return logger.log(level, message);
         },
+        
         close: function close(){
             return logger.close();
         }

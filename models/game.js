@@ -51,7 +51,7 @@ function Game(options) {
     };
     
     //Setting gameID
-    logger = require('../helpers/log')(this.id);
+    this.logger = require('../helpers/log')(this.id);
 };
 
 Game.prototype.status = function(playerID) {
