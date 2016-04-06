@@ -32,7 +32,7 @@ Produce a game that
     supports a fun experience for the player that
         is easy to play
             because it has
-                has an intuitive interface
+                an intuitive interface
                 simple game rules
 
         is convenient to play
@@ -48,29 +48,34 @@ Produce a game that
                 an immersive game atmosphere
 
         is playable at different scopes
-            among friends
-            among communities
-            among states
-            among countries
+            among 
+                friends
+                communities
+                states
+                countries
             globally
 
     supports monetization that
-        is legally considered a game of skill because
-            performance is dictated primarily by skill
+        is legally considered a game of skill 
+            because
+                performance is dictated primarily by skill
         
-        exploits gambling addiction by
-            implementing psychological tactics similar to casinos
-            influencing players to make emotional decisions as opposed to logical
+        exploits gambling addiction
+            by
+                implementing psychological tactics similar to casinos
+                influencing players to make emotional decisions as opposed to logical
 
-        exploits competitive human nature by
-            implementing leaderboards
-            implementing social media leaderboards, comparisons, statistics
-            allowing players to share their achievement while masking their failure
+        exploits competitive human nature
+            by
+                implementing leaderboards
+                implementing social media leaderboards, comparisons, statistics
+                allowing players to share their achievement while masking their failure
 
-    supports both fun and monetization by
-        allowing players to wager and earn money
-            by purchasing points via any major currency
-            by wagering these points competing against others
+    supports both fun and monetization 
+        by
+            allowing players to wager and earn money
+                by purchasing points via any major currency
+                by wagering these points competing against others
 ```
 
 ## Conditionals
