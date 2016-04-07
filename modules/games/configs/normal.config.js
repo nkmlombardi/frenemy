@@ -1,0 +1,3 @@
+/*
+	Some kind of configuration that is injected into the GameService
+*/
