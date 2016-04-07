@@ -89,6 +89,7 @@ We fail in proving legality
             or introduce way to earn in-game credits
             or distribute in-game credits on a daily basis
                 and allow players to purchase speed-ups
+            or implement advertisements
 
 We fail to hold user engagement (game isn't fun)
     introduce added complexity to the game
