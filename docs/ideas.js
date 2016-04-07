@@ -156,6 +156,11 @@ class GameService {
 
     if (player.canJoinGame()) {
       this.games[event.game.id].addPlayer(player);
+      this.eventManager.fireEvent({
+        name: "game.player_join",
+        player: player,
+        game: event.game.id,
+      });
     }
   }
 
@@ -163,6 +168,11 @@ class GameService {
     var player = this.playerService.find(event.player.id);
 
     this.games[event.game.id].removePlayer(player);
+    this.eventManager.fireEvent({
+      name: "game.player_leave",
+      player: player,
+      game: event.game.id,
+    });
   }
 }
 
