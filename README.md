@@ -4,6 +4,9 @@ Intuitive, easy to pick up and play mobile game that allows players to test thei
 ## Setup
 Clone the repository to your local machine. Make sure you have nodeJS and npm (package manager) installed on your machine. Run `npm install` while in the home directory of the project. This will install the project's dependencies. I also suggest install `nodemon` globally on your machine, which will automatically detect changes to the server file and restart the node process. Once the process is running access the page at `http://localhost:8080`.
 
+## Mobile Setup
+Navigate to the `ui/mobile` directory and run `npm install`. While the server & web layer are up and running (the mobile UI communicates with the server process), type `ionic serve`, which will start up the process and should open the web page for you. If not, then access it via `http://localhost:8100`.
+
 ## Screenshot
 ![screenshot](https://i.gyazo.com/ab2fa32deb872fd6a9ea664e8ef66cf2.png)
 

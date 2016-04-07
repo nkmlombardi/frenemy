@@ -1,25 +1,26 @@
 // Libraries
 var utility = require('../helpers/utility');
+var Database = require('../database');
 var ballot = require('./ballot');
-var _ = require('underscore');
 
-// Data Structures
-var Set = require("collections/set");
-
-exports.create = function(players) {
-    return new Round(players);
+exports.create = function(options) {
+    return new Round(options);
 };
 
-function Round(players) {
+function Round(options) {
     this.id = utility.guid();
-    this.players = players;
+    this.players = options.players;
     this.voted = [];
-    this.ballot = ballot.create();
+    this.ballot = ballot.create({ gameID: options.gameID });
+    this.gameID = options.gameID;
 };
 
 // Start Round
 Round.prototype.start = function() {
-    // Nothing at the moment
+    // Distribute Tokens
+    this.players.forEach(function(player) {
+        return Database.players.get(player).addToken(5);
+    });
 };
 
 // End Round, close Ballot and tally votes

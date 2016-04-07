@@ -269,7 +269,7 @@ Game.prototype.start = function() {
         }
 
         // Create Round object, push onto Game object
-        this.current.round = Round.create(this.current.players);
+        this.current.round = Round.create({ players: this.current.players, gameID: this.id });
         this.current.rounds.push(this.current.round);
 
         // Start Round & Ballot listener

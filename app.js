@@ -28,11 +28,11 @@ var Message = require('./models/message');
 server.listen(8080);
 
 // Serve static files
-app.use(express.static('public'));
+app.use(express.static('ui/web'));
 
 // Resolve all paths to index
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/public/index.html');
+    res.sendFile(__dirname + '/ui/web/index.html');
 });
 
 
@@ -56,6 +56,8 @@ io.sockets.on('connection', function(socket) {
      * as they are assigned an ID and name.
      */
     socket.on('playerLogin', function() {
+
+        console.log('New Player Connected!');
 
         // Create, register, and persist Player object
         socket.player = Player.create(socket.id);
@@ -102,13 +104,14 @@ io.sockets.on('connection', function(socket) {
                 gameID: socket.game.id,
                 senderID: 0,
                 type: 'SELF',
-                content: 'You were voted out and therefore lost your ability to send messages.'
+                content: 'Chill out and stop sending messages so fast. You\' be fine.. probably.'
             }), socket);
+            return;
         }
 
         // Player kicked limiter
         if (socket.game.current.state === socket.game.states.playing) {
-            if (socket.game.current.players.has(socket.player.id)) {
+            if (!socket.game.current.players.has(socket.player.id)) {
                 socket.game.addMessage(Message.create({
                     gameID: socket.game.id,
                     senderID: 0,
@@ -120,7 +123,9 @@ io.sockets.on('connection', function(socket) {
         }
 
         // Handle private messages
-        if (target !== undefined && socket.game.current.state == socket.game.states.playing) {
+        // && socket.game.current.state == socket.game.states.playing
+        if (target !== undefined) {
+            console.log('Private Message (' + target + '): ', content);
             socket.game.addMessage(Message.create({
                 gameID: socket.game.id,
                 senderID: socket.player.id,
@@ -151,7 +156,7 @@ io.sockets.on('connection', function(socket) {
     socket.on('createGame', function() {
 
         // Create, register, and persist new Game object
-        var newGame = Game.create({ timeout: 10000 });
+        var newGame = Game.create({ timeout: 100000 });
 
         // Notify other Player's of Client's departure
         socket.game.addMessage(Message.create({
@@ -244,47 +249,50 @@ io.sockets.on('connection', function(socket) {
 
     socket.on('startGame', function() {
         // Notify other Player's of Client's arrival
-        socket.game.addMessage(Message.create({
-            gameID: socket.game.id,
-            senderID: 0,
-            type: 'PUBLIC',
-            content: 'The game has been started...'
-        }), socket);
+        // socket.game.addMessage(Message.create({
+        //     gameID: socket.game.id,
+        //     senderID: 0,
+        //     type: 'PUBLIC',
+        //     content: 'The game has been started...'
+        // }), socket);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '3...'
-            }), socket);
-        }, 1000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '3...'
+        //     }), socket);
+        // }, 1000);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '2...'
-            }), socket);
-        }, 2000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '2...'
+        //     }), socket);
+        // }, 2000);
 
-        setTimeout(function() {
-            socket.game.addMessage(Message.create({
-                gameID: socket.game.id,
-                senderID: 0,
-                type: 'PUBLIC',
-                content: '1...'
-            }), socket);
-        }, 3000);
+        // setTimeout(function() {
+        //     socket.game.addMessage(Message.create({
+        //         gameID: socket.game.id,
+        //         senderID: 0,
+        //         type: 'PUBLIC',
+        //         content: '1...'
+        //     }), socket);
+        // }, 3000);
 
-        setTimeout(function() {
-            socket.game.start();
-        }, 4000);
+        // setTimeout(function() {
+        //     socket.game.start();
+        // }, 4000);
+
+        // In the interest of development
+        socket.game.start();
     });
 
 
-    socket.on('sendVote', function(target) {
+    socket.on('addVote', function(target) {
         console.log(socket.player.name + ' has voted for ' + Database.players.get(target));
 
         if (socket.game.current.state !== socket.game.states.playing) {
@@ -308,6 +316,36 @@ io.sockets.on('connection', function(socket) {
         }
 
         var result = socket.game.current.round.ballot.addVote(socket.player.id, target);
+        if (result) { return socket.emit('updateVote', target); }
+
+        return console.log('No vote was created!?');
+    });
+
+
+    socket.on('removeVote', function(target) {
+        console.log(socket.player.name + ' has removed a vote for ' + Database.players.get(target));
+
+        if (socket.game.current.state !== socket.game.states.playing) {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'The game has not started, you cannot submit votes.'
+            }), socket);
+            return console.log('Vote receieved for game that has not started');
+        }
+
+        if (!socket.game.current.players.has(socket.player.id)) {
+            socket.game.addMessage(Message.create({
+                gameID: socket.game.id,
+                senderID: 0,
+                type: 'SELF',
+                content: 'You lost and can no longer submit votes to this game.'
+            }), socket);
+            return console.log('Player lost and tried to vote.');
+        }
+
+        var result = socket.game.current.round.ballot.removeVote(socket.player.id, target);
         if (result) { return socket.emit('updateVote', target); }
 
         return console.log('No vote was created!?');
@@ -341,8 +379,8 @@ io.sockets.on('connection', function(socket) {
 
             if (socket.player) {
                 // Remove Socket's Player from global Game Collection
-                Database.players.delete(socket.player.id);
+                // Database.players.delete(socket.player.id);
             }
-        }, 1500)
+        }, 2500)
     });
 });
