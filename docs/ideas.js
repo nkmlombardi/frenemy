@@ -185,13 +185,6 @@ class GameServiceModule extends Module {
     container.register('GameService', => {
       return container.resolve(GameService);
     });
-
-    em.registerListener('socket.game.join', this.onPublicChat);
-    em.registerListener('socket.game.join', this.onPublicChat);
-  }
-
-  onPublicChat(event) {
-
   }
 
   getName() {
