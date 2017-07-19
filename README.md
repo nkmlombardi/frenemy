@@ -1,4 +1,4 @@
-# Frenemy -- Abandoned
+# [Project Discontinued] Frenemy
 *This project is no longer under development*
 
 Intuitive, easy to pick up and play mobile game that allows players to test their wits against strangers for money.
